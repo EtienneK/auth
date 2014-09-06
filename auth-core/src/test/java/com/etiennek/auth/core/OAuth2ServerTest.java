@@ -4,14 +4,13 @@ import static org.junit.Assert.*;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
 import com.etiennek.auth.core.model.*;
+import com.google.common.collect.ImmutableMap;
 
 public class OAuth2ServerTest {
 
@@ -53,16 +52,15 @@ public class OAuth2ServerTest {
       }
 
       @Override
-      public CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId,
-          GrantType grantType) {
+      public CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, GrantType grantType) {
         CompletableFuture<IsGrantTypeAllowedRes> ret = new CompletableFuture<>();
         ret.complete(new IsGrantTypeAllowedRes(true));
         return ret;
       }
 
       @Override
-      public CompletableFuture<Void> saveAccessToken(String accessToken, String clientId,
-          User user, LocalDateTime expires) {
+      public CompletableFuture<Void> saveAccessToken(String accessToken, String clientId, User user,
+          LocalDateTime expires) {
         CompletableFuture<Void> ret = new CompletableFuture<>();
         ret.complete(null);
         return ret;
@@ -95,8 +93,8 @@ public class OAuth2ServerTest {
       }
 
       @Override
-      public CompletableFuture<Void> saveRefreshToken(String refreshToken, String clientId,
-          User user, LocalDateTime expires) {
+      public CompletableFuture<Void> saveRefreshToken(String refreshToken, String clientId, User user,
+          LocalDateTime expires) {
         CompletableFuture<Void> ret = new CompletableFuture<>();
         ret.complete(null);
         return ret;
@@ -113,29 +111,26 @@ public class OAuth2ServerTest {
     };
 
     config =
-        OAuth2ServerConfiguration.builder(requiredFunctions)
-            .withPasswordGrantTypeSupport(passwordRequiredFunctions)
+        OAuth2ServerConfiguration.builder(requiredFunctions).withPasswordGrantTypeSupport(passwordRequiredFunctions)
             .withRefreshTokenGrantTypeSupport(refreshTokenRequiredFunctions)
             .withTokenGenerationSupport(tokenGenerationRequiredFunctions).build();
 
     oAuth2Server = new OAuth2Server(config);
 
-    Map<String, String> reqHeader = new HashMap<>();
-    reqHeader.put("Authorization",
-        "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes()));
-    reqHeader.put("Content-Type", "application/x-www-form-urlencoded");
+    ImmutableMap<String, String> reqHeader =
+        ImmutableMap.of("Authorization",
+            "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes()), "Content-Type",
+            "application/x-www-form-urlencoded");
     String reqBody = "grant_type=password&username=" + userId + "&password=" + userPassword;
-    HttpRequest request = new HttpRequest("POST", reqHeader, reqBody);
+    Request request = new Request("POST", reqHeader, reqBody);
 
-    Map<String, String> resHeader = new HashMap<>();
-    resHeader.put("Content-Type", "application/json;charset=UTF-8");
-    resHeader.put("Cache-Control", "no-store");
-    resHeader.put("Pragma", "no-cache");
+    ImmutableMap<String, String> resHeader =
+        ImmutableMap.of("Content-Type", "application/json;charset=UTF-8", "Cache-Control", "no-store", "Pragma",
+            "no-cache");
     String resBody =
         "{\n\t\"access_token\":\"Access_Test_Token\",\n\t\"token_type\":\"bearer\",\n\t\"expires_in\":\"3600\",\n\t\"refresh_token\":\"Refresh_Test_Token\"\n}";
 
-    assertEquals(new HttpResponse(200, resHeader, resBody),
-        oAuth2Server.grant(request).get(2, TimeUnit.SECONDS));
+    assertEquals(new Response(200, resHeader, resBody), oAuth2Server.grant(request).get(2, TimeUnit.SECONDS));
   }
 
 }

@@ -1,15 +1,14 @@
 package com.etiennek.auth.core;
 
-import java.util.Map;
-
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
-public class HttpRequest {
+public class Request {
   private String method;
-  private Map<String, String> header;
+  private ImmutableMap<String, String> header;
   private String body;
 
-  public HttpRequest(String method, Map<String, String> header, String body) {
+  public Request(String method, ImmutableMap<String, String> header, String body) {
     this.method = Preconditions.checkNotNull(method);
     this.header = Preconditions.checkNotNull(header);
     this.body = Preconditions.checkNotNull(body);
@@ -19,7 +18,7 @@ public class HttpRequest {
     return method;
   }
 
-  public Map<String, String> getHeader() {
+  public ImmutableMap<String, String> getHeader() {
     return header;
   }
 
@@ -45,7 +44,7 @@ public class HttpRequest {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    HttpRequest other = (HttpRequest) obj;
+    Request other = (Request) obj;
     if (body == null) {
       if (other.body != null)
         return false;

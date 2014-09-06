@@ -2,7 +2,7 @@ package com.etiennek.auth.core;
 
 import com.etiennek.auth.core.model.ErrorCode;
 
-public class OAuth2Exception extends Exception {
+public class OAuth2Exception extends RuntimeException {
 
   private static final long serialVersionUID = 8964296846977980153L;
 
