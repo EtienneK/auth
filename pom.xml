@@ -16,8 +16,8 @@
     <!-- Versions -->
     <guava.version>18.0</guava.version>
     <junit.version>4.11</junit.version>
-    <httpclient.version>4.3.5</httpclient.version>
     <mockito.version>1.9.5</mockito.version>
+    <awaitility.version>1.6.1</awaitility.version>
   </properties>
 
   <dependencies>
@@ -34,6 +34,12 @@
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.jayway.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -43,12 +49,6 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>${httpclient.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

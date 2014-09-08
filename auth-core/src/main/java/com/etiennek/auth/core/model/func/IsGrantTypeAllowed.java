@@ -2,12 +2,10 @@ package com.etiennek.auth.core.model.func;
 
 import java.util.concurrent.CompletableFuture;
 
-import com.etiennek.auth.core.model.GrantType;
-
 @FunctionalInterface
 public interface IsGrantTypeAllowed {
 
-  CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, GrantType grantType);
+  CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, String grantType);
 
   public class IsGrantTypeAllowedRes {
     public final boolean allowed;

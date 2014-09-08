@@ -3,7 +3,9 @@ package com.etiennek.auth.core;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -11,10 +13,12 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
+import com.etiennek.auth.core.Const.DefaultGrantType;
 import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.model.func.GenerateToken.GenerateTokenRes;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 public class OAuth2ServerConfiguration {
 
@@ -26,6 +30,7 @@ public class OAuth2ServerConfiguration {
   private Optional<Duration> refreshTokenLifetime;
   private Duration authCodeLifetime;
   private Pattern clientIdRegex;
+  private ImmutableList<String> supportedGrantTypes;
 
   private OAuth2ServerConfiguration() {
     funcs = new Funcs();
@@ -59,11 +64,15 @@ public class OAuth2ServerConfiguration {
     return clientIdRegex;
   }
 
+  public ImmutableList<String> getSupportedGrantTypes() {
+    return supportedGrantTypes;
+  }
+
   public class Funcs {
     private RequiredFunctions req;
     private Optional<RequiredFunctions.AuthCodeGrantType> authCode = Optional.empty();
     private Optional<RequiredFunctions.PasswordGrantType> password = Optional.empty();
-    private Optional<RequiredFunctions.RefreshTokenGrantType> refreshCode = Optional.empty();
+    private Optional<RequiredFunctions.RefreshTokenGrantType> refreshToken = Optional.empty();
     private RequiredFunctions.TokenGeneration tokenGeneration;
 
     public RequiredFunctions getReq() {
@@ -78,8 +87,8 @@ public class OAuth2ServerConfiguration {
       return password;
     }
 
-    public Optional<RequiredFunctions.RefreshTokenGrantType> getRefreshCode() {
-      return refreshCode;
+    public Optional<RequiredFunctions.RefreshTokenGrantType> getRefreshToken() {
+      return refreshToken;
     }
 
     public RequiredFunctions.TokenGeneration getTokenGeneration() {
@@ -87,18 +96,15 @@ public class OAuth2ServerConfiguration {
     }
   }
 
-  public static Builder builder(RequiredFunctions requiredFunctions) {
-    requiredFunctions =
-        Preconditions.checkNotNull(requiredFunctions,
-            "No requiredFunctions supplied to OAuth2Server Builder");
-    return new Builder(requiredFunctions);
-  }
-
   public static class Builder {
     private OAuth2ServerConfiguration config = new OAuth2ServerConfiguration();
 
-    private Builder(RequiredFunctions requiredFunctions) {
-      config.funcs.req = requiredFunctions;
+    private List<String> supportedGrantTypes = new ArrayList<>();
+
+    public Builder(RequiredFunctions requiredFunctions) {
+      config.funcs.req =
+          requiredFunctions =
+              Preconditions.checkNotNull(requiredFunctions, "No requiredFunctions supplied to OAuth2Server Builder");
     }
 
     public Builder withExecutor(Executor executor) {
@@ -112,14 +118,12 @@ public class OAuth2ServerConfiguration {
     }
 
     public Builder withAccessTokenLifetime(Duration accessTokenLifetime) {
-      config.accessTokenLifetime =
-          accessTokenLifetime == null ? Optional.empty() : Optional.of(accessTokenLifetime);
+      config.accessTokenLifetime = accessTokenLifetime == null ? Optional.empty() : Optional.of(accessTokenLifetime);
       return this;
     }
 
     public Builder withRefreshTokenLifetime(Duration refreshTokenLifetime) {
-      config.refreshTokenLifetime =
-          refreshTokenLifetime == null ? Optional.empty() : Optional.of(refreshTokenLifetime);
+      config.refreshTokenLifetime = refreshTokenLifetime == null ? Optional.empty() : Optional.of(refreshTokenLifetime);
       return this;
     }
 
@@ -133,24 +137,36 @@ public class OAuth2ServerConfiguration {
       return this;
     }
 
-    public Builder withAuthCodeGrantTypeSupport(
-        RequiredFunctions.AuthCodeGrantType requiredFunctions) {
-      config.funcs.authCode =
-          requiredFunctions == null ? Optional.empty() : Optional.of(requiredFunctions);
+    public Builder withAuthCodeGrantTypeSupport(RequiredFunctions.AuthCodeGrantType requiredFunctions) {
+      if (requiredFunctions == null) {
+        config.funcs.authCode = Optional.empty();
+        supportedGrantTypes.remove(DefaultGrantType.AUTHORIZATION_CODE.toString());
+      } else {
+        config.funcs.authCode = Optional.of(requiredFunctions);
+        supportedGrantTypes.add(DefaultGrantType.AUTHORIZATION_CODE.toString());
+      };
       return this;
     }
 
-    public Builder withPasswordGrantTypeSupport(
-        RequiredFunctions.PasswordGrantType requiredFunctions) {
-      config.funcs.password =
-          requiredFunctions == null ? Optional.empty() : Optional.of(requiredFunctions);
+    public Builder withPasswordGrantTypeSupport(RequiredFunctions.PasswordGrantType requiredFunctions) {
+      if (requiredFunctions == null) {
+        config.funcs.password = Optional.empty();
+        supportedGrantTypes.remove(DefaultGrantType.PASSWORD.toString());
+      } else {
+        config.funcs.password = Optional.of(requiredFunctions);
+        supportedGrantTypes.add(DefaultGrantType.PASSWORD.toString());
+      };
       return this;
     }
 
-    public Builder withRefreshTokenGrantTypeSupport(
-        RequiredFunctions.RefreshTokenGrantType requiredFunctions) {
-      config.funcs.refreshCode =
-          requiredFunctions == null ? Optional.empty() : Optional.of(requiredFunctions);
+    public Builder withRefreshTokenGrantTypeSupport(RequiredFunctions.RefreshTokenGrantType requiredFunctions) {
+      if (requiredFunctions == null) {
+        config.funcs.refreshToken = Optional.empty();
+        supportedGrantTypes.remove(DefaultGrantType.REFRESH_TOKEN.toString());
+      } else {
+        config.funcs.refreshToken = Optional.of(requiredFunctions);
+        supportedGrantTypes.add(DefaultGrantType.REFRESH_TOKEN.toString());
+      };
       return this;
     }
 
@@ -184,6 +200,8 @@ public class OAuth2ServerConfiguration {
         config.funcs.tokenGeneration = this::generateTokenDefault;
       }
 
+      config.supportedGrantTypes = ImmutableList.copyOf(supportedGrantTypes);
+
       return config;
     }
 
@@ -193,7 +211,8 @@ public class OAuth2ServerConfiguration {
         byte[] randomBytes = new byte[32];
         SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
         secureRandom.nextBytes(randomBytes);
-        ret.complete(new GenerateTokenRes(Base64.getEncoder().encodeToString(randomBytes)));
+        ret.complete(new GenerateTokenRes(Base64.getEncoder()
+                                                .encodeToString(randomBytes)));
       } catch (NoSuchAlgorithmException e) {
         // TODO: Error handling
         ret.completeExceptionally(e);

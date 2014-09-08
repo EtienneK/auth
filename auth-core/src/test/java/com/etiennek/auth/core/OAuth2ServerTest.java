@@ -1,15 +1,22 @@
 package com.etiennek.auth.core;
 
-import static org.junit.Assert.*;
+import static com.jayway.awaitility.Awaitility.await;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.Assert.assertEquals;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Test;
 
-import com.etiennek.auth.core.model.*;
+import com.etiennek.auth.core.model.AccessToken;
+import com.etiennek.auth.core.model.Client;
+import com.etiennek.auth.core.model.RefreshToken;
+import com.etiennek.auth.core.model.RequiredFunctions;
+import com.etiennek.auth.core.model.TokenType;
+import com.etiennek.auth.core.model.User;
 import com.google.common.collect.ImmutableMap;
 
 public class OAuth2ServerTest {
@@ -22,6 +29,13 @@ public class OAuth2ServerTest {
 
   private OAuth2ServerConfiguration config;
   private OAuth2Server oAuth2Server;
+
+  private Response response0;
+
+  @Before
+  public void init() {
+    response0 = null;
+  }
 
   @Test
   public void Password_Grant_Type() throws Exception {
@@ -52,7 +66,7 @@ public class OAuth2ServerTest {
       }
 
       @Override
-      public CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, GrantType grantType) {
+      public CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, String grantType) {
         CompletableFuture<IsGrantTypeAllowedRes> ret = new CompletableFuture<>();
         ret.complete(new IsGrantTypeAllowedRes(true));
         return ret;
@@ -104,23 +118,40 @@ public class OAuth2ServerTest {
     tokenGenerationRequiredFunctions = new RequiredFunctions.TokenGeneration() {
       @Override
       public CompletableFuture<GenerateTokenRes> generateToken(TokenType tokenType) {
-        if (tokenType == TokenType.ACCESS)
-          return CompletableFuture.completedFuture(new GenerateTokenRes("Access_Test_Token"));
-        return CompletableFuture.completedFuture(new GenerateTokenRes("Refresh_Test_Token"));
+        CompletableFuture<GenerateTokenRes> ret = new CompletableFuture<>();
+
+        new Thread("generateTokenThread") {
+          public void run() {
+            try {
+              sleep(200);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+            if (tokenType == TokenType.ACCESS)
+              ret.complete(new GenerateTokenRes("Access_Test_Token"));
+            else
+              ret.complete(new GenerateTokenRes("Refresh_Test_Token"));
+          };
+        }.start();
+
+        return ret;
       }
     };
 
     config =
-        OAuth2ServerConfiguration.builder(requiredFunctions).withPasswordGrantTypeSupport(passwordRequiredFunctions)
-            .withRefreshTokenGrantTypeSupport(refreshTokenRequiredFunctions)
-            .withTokenGenerationSupport(tokenGenerationRequiredFunctions).build();
+        new OAuth2ServerConfiguration.Builder(requiredFunctions).withPasswordGrantTypeSupport(passwordRequiredFunctions)
+                                                                .withRefreshTokenGrantTypeSupport(
+                                                                    refreshTokenRequiredFunctions)
+                                                                .withTokenGenerationSupport(
+                                                                    tokenGenerationRequiredFunctions)
+                                                                .build();
 
     oAuth2Server = new OAuth2Server(config);
 
     ImmutableMap<String, String> reqHeader =
-        ImmutableMap.of("Authorization",
-            "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes()), "Content-Type",
-            "application/x-www-form-urlencoded");
+        ImmutableMap.of("Authorization", "Basic " + Base64.getEncoder()
+                                                          .encodeToString((clientId + ":" + clientSecret).getBytes()),
+            "Content-Type", "application/x-www-form-urlencoded");
     String reqBody = "grant_type=password&username=" + userId + "&password=" + userPassword;
     Request request = new Request("POST", reqHeader, reqBody);
 
@@ -130,7 +161,17 @@ public class OAuth2ServerTest {
     String resBody =
         "{\n\t\"access_token\":\"Access_Test_Token\",\n\t\"token_type\":\"bearer\",\n\t\"expires_in\":\"3600\",\n\t\"refresh_token\":\"Refresh_Test_Token\"\n}";
 
-    assertEquals(new Response(200, resHeader, resBody), oAuth2Server.grant(request).get(2, TimeUnit.SECONDS));
+    oAuth2Server.grant(request)
+                .whenComplete((response, e) -> {
+                  response0 = response;
+                });
+
+    await().atMost(1000, MILLISECONDS)
+           .until(() -> response0 != null);
+
+    assertEquals(200, response0.getCode());
+    assertEquals(resHeader, response0.getHeader());
+    assertEquals(resBody, response0.getBody());
   }
 
 }
