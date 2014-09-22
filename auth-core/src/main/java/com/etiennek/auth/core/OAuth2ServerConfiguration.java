@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 import com.etiennek.auth.core.Const.DefaultGrantType;
 import com.etiennek.auth.core.model.RequiredFunctions;
@@ -23,21 +22,26 @@ import com.google.common.collect.ImmutableList;
 public class OAuth2ServerConfiguration {
 
   private Executor executor;
+  private Regex regex;
   private Funcs funcs;
 
   private Consumer<Exception> debug;
   private Optional<Duration> accessTokenLifetime;
   private Optional<Duration> refreshTokenLifetime;
   private Duration authCodeLifetime;
-  private Pattern clientIdRegex;
   private ImmutableList<String> supportedGrantTypes;
 
   private OAuth2ServerConfiguration() {
+    regex = new Regex();
     funcs = new Funcs();
   }
 
   public Executor getExecutor() {
     return executor;
+  }
+
+  public Regex getRegex() {
+    return regex;
   }
 
   public Funcs getFuncs() {
@@ -60,12 +64,17 @@ public class OAuth2ServerConfiguration {
     return authCodeLifetime;
   }
 
-  public Pattern getClientIdRegex() {
-    return clientIdRegex;
-  }
-
   public ImmutableList<String> getSupportedGrantTypes() {
     return supportedGrantTypes;
+  }
+
+  public class Regex {
+    private String clientId;
+
+    public String getClientId() {
+      return clientId;
+    }
+
   }
 
   public class Funcs {
@@ -132,8 +141,8 @@ public class OAuth2ServerConfiguration {
       return this;
     }
 
-    public Builder withClientIdRegex(Pattern clientIdRegex) {
-      config.clientIdRegex = clientIdRegex;
+    public Builder withClientIdRegex(String clientIdRegex) {
+      config.regex.clientId = clientIdRegex;
       return this;
     }
 
@@ -193,8 +202,8 @@ public class OAuth2ServerConfiguration {
       if (config.authCodeLifetime == null) {
         config.authCodeLifetime = Duration.ofSeconds(30);
       }
-      if (config.clientIdRegex == null) {
-        config.clientIdRegex = Pattern.compile("^[a-z0-9-_]{3,40}$");
+      if (config.regex.clientId == null) {
+        config.regex.clientId = "^[A-Za-z0-9-_]{3,40}$";
       }
       if (config.funcs.tokenGeneration == null) {
         config.funcs.tokenGeneration = this::generateTokenDefault;

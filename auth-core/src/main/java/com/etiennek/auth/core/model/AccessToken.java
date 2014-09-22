@@ -6,15 +6,15 @@ import com.google.common.base.Preconditions;
 
 public class AccessToken {
 
-  private String id;
+  private String userId;
   private LocalDateTime expires;
 
   public AccessToken(String userId) {
     this(userId, null);
   }
 
-  public AccessToken(String id, LocalDateTime expires) {
-    this.id = Preconditions.checkNotNull(id);
+  public AccessToken(String userId, LocalDateTime expires) {
+    this.userId = Preconditions.checkNotNull(userId);
     this.expires = expires;
   }
 

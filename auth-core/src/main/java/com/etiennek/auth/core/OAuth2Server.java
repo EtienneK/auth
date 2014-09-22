@@ -5,12 +5,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import static com.etiennek.auth.core.Const.*;
+import static com.etiennek.auth.core.Util.*;
+import static com.etiennek.auth.core.model.ErrorCode.*;
 
-import com.etiennek.auth.core.model.ErrorCode;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.resp.AccessTokenResponse;
 import com.etiennek.auth.core.resp.GrantErrorResponse;
-import com.etiennek.auth.core.util.Parser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -24,13 +24,16 @@ public class OAuth2Server {
 
   public CompletableFuture<Response> grant(Request request) {
     Grant grant = new Grant(request);
-
-    return grant.extractCredentials(null)
-                .thenCompose(grant::generateAccessToken)
-                .thenCompose(grant::generateRefreshToken)
-                .thenCompose(grant::sendResponse)
-                .exceptionally(grant::generateErrorResponse);
-
+    try {
+      return grant.extractCredentials(null)
+                  .thenCompose(grant::checkClient)
+                  .thenCompose(grant::generateAccessToken)
+                  .thenCompose(grant::generateRefreshToken)
+                  .thenCompose(grant::sendResponse)
+                  .exceptionally(grant::generateErrorResponse);
+    } catch (Exception e) {
+      return CompletableFuture.completedFuture(grant.generateErrorResponse(e));
+    }
 
     /*
      * extractCredentials, checkClient, checkGrantTypeAllowed, checkGrantType, generateAccessToken,
@@ -42,6 +45,9 @@ public class OAuth2Server {
     private ImmutableMap<String, ImmutableList<String>> body;
 
     private Request request;
+
+    private String clientId;
+    private String clientSecret;
 
     private String accessToken;
     private String refreshToken;
@@ -59,24 +65,53 @@ public class OAuth2Server {
       // Only POST via application/x-www-form-urlencoded is acceptable
       if (!request.getMethod()
                   .equals(METHOD_POST) || contentType == null || !contentType.equals(MEDIA_X_WWW_FORM_URLENCODED)) {
-        ret.completeExceptionally(new OAuth2Exception(ErrorCode.INVALID_REQUEST,
-            "Method must be POST with application/x-www-form-urlencoded encoding."));
-        return ret;
+        throw new OAuth2Exception(INVALID_REQUEST,
+            "Method must be POST with application/x-www-form-urlencoded encoding.");
       }
 
-      body = Parser.splitQuery(request.getBody());
+      body = splitQuery(request.getBody());
 
       // Grant type
       grantType = body.containsKey(KEY_GRANT_TYPE) ? body.get(KEY_GRANT_TYPE)
                                                          .get(0) : null;
       if (!configuration.getSupportedGrantTypes()
                         .contains(grantType)) {
-        ret.completeExceptionally(new OAuth2Exception(ErrorCode.INVALID_REQUEST,
-            "Invalid or missing grant_type parameter."));
+        throw new OAuth2Exception(INVALID_REQUEST, "Invalid or missing grant_type parameter.");
+      }
+
+      // Client Credentials
+      Optional<ImmutableList<String>> ccHeader = getBasicAuthCredentialsHeader(request.getHeader()
+                                                                                      .get("Authorization"));
+      if (ccHeader.isPresent()) {
+        ImmutableList<String> cc = ccHeader.get();
+        clientId = cc.get(0);
+        if (clientId == null || !clientId.matches(configuration.getRegex()
+                                                               .getClientId()) || clientId.trim()
+                                                                                          .isEmpty()) {
+          throw new OAuth2Exception(INVALID_CLIENT, "Missing client_id parameter.");
+        }
+        clientSecret = cc.get(1);
+        if (clientSecret == null || clientId.trim()
+                                            .isEmpty()) {
+          throw new OAuth2Exception(INVALID_CLIENT, "Missing client_secret parameter.");
+        }
+      } else {
+        throw new OAuth2Exception(INVALID_CLIENT, "Invalid or missing client credentials.");
       }
 
       ret.complete(null);
       return ret;
+    }
+
+    CompletableFuture<Void> checkClient(Void v) {
+      return configuration.getFuncs()
+                          .getReq()
+                          .getClient(clientId, clientSecret)
+                          .thenAccept((result) -> {
+                            if (result == null || !result.client.isPresent()) {
+                              throw new OAuth2Exception(INVALID_CLIENT, "Invalid client credentials.");
+                            }
+                          });
     }
 
     CompletableFuture<Void> generateAccessToken(Void v) {
@@ -111,15 +146,16 @@ public class OAuth2Server {
     public GrantErrorResponse generateErrorResponse(Throwable e) {
       Throwable cause = e.getCause();
       if (e instanceof CompletionException && cause instanceof OAuth2Exception) {
-        String message = e.getMessage()
-                          .replace(OAuth2Exception.class.getName() + ": ", "");
+        String message = cause.getMessage();
         return new GrantErrorResponse(((OAuth2Exception) cause).getErrorCode(), message);
+      } else if (e instanceof OAuth2Exception) {
+        String message = e.getMessage();
+        return new GrantErrorResponse(((OAuth2Exception) e).getErrorCode(), message);
       } else {
         // TODO: Logging
-        return new GrantErrorResponse(ErrorCode.SERVER_ERROR, "An unknown error has occured.");
+        return new GrantErrorResponse(SERVER_ERROR, "An unknown error has occured.");
       }
     }
-
   }
 
 }

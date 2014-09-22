@@ -26,23 +26,18 @@ public class AccessTokenResponse extends Response {
     Preconditions.checkNotNull(accessToken);
 
     StringBuilder body = new StringBuilder();
-    body.append("{\n")
-        .append("\t\"access_token\":\"")
+    body.append("{\"access_token\":\"")
         .append(accessToken)
-        .append("\",\n")
-        .append("\t\"token_type\":\"")
-        .append("bearer")
-        .append("\",\n");
+        .append("\",\"token_type\":\"bearer\"");
     if (accessTokenLifetime.isPresent()) {
-      body.append("\t\"expires_in\":\"")
+      body.append(",\"expires_in\":")
           .append(accessTokenLifetime.get()
-                                     .getSeconds())
-          .append("\",\n");
+                                     .getSeconds());
     }
     if (refreshToken.isPresent()) {
-      body.append("\t\"refresh_token\":\"")
+      body.append(",\"refresh_token\":\"")
           .append(refreshToken.get())
-          .append("\"\n");
+          .append("\"");
     }
     body.append("}");
     return body.toString();
