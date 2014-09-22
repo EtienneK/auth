@@ -7,6 +7,7 @@ import static java.util.concurrent.TimeUnit.*;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -110,10 +111,6 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
   @Test
   public void grant_FAILURE_Invalid_Request_Content_Type() throws Exception {
-    // Arrange - Server
-    configBuilder.withRefreshTokenGrantTypeSupport(null)
-                 .withAccessTokenLifetime(null);
-
     // Arrange - Request
     ImmutableMap<String, String> requestHeader =
         imbs().put("Authorization", "Basic " + Base64.getEncoder()
@@ -148,10 +145,6 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
   @Test
   public void grant_FAILURE_Invalid_Request_Method() throws Exception {
-    // Arrange - Server
-    configBuilder.withRefreshTokenGrantTypeSupport(null)
-                 .withAccessTokenLifetime(null);
-
     // Arrange - Request
     ImmutableMap<String, String> requestHeader =
         imbs().put("Authorization", "Basic " + Base64.getEncoder()
@@ -186,10 +179,6 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
   @Test
   public void grant_FAILURE_Invalid_Supported_Grant_Type() throws Exception {
-    // Arrange - Server
-    configBuilder.withRefreshTokenGrantTypeSupport(null)
-                 .withAccessTokenLifetime(null);
-
     // Arrange - Request
     ImmutableMap<String, String> requestHeader =
         imbs().put("Authorization", "Basic " + Base64.getEncoder()
@@ -224,10 +213,6 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
   @Test
   public void grant_FAILURE_Missing_Client_Credentials() throws Exception {
-    // Arrange - Server
-    configBuilder.withRefreshTokenGrantTypeSupport(null)
-                 .withAccessTokenLifetime(null);
-
     // Arrange - Request
     ImmutableMap<String, String> requestHeader = imbs().put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
                                                        .build();
@@ -259,14 +244,50 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
   @Test
   public void grant_FAILURE_Invalid_Client_Credentials() throws Exception {
-    // Arrange - Server
-    configBuilder.withRefreshTokenGrantTypeSupport(null)
-                 .withAccessTokenLifetime(null);
+    // Arrange
+    client = Optional.empty();
 
     // Arrange - Request
     ImmutableMap<String, String> requestHeader =
         imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString(("UnknownClient:" + CLIENT_SECRET).getBytes()))
+                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
+              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
+              .build();
+    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    Request request = new Request("POST", requestHeader, requestBody);
+
+    // Arrange - Expected Response
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("access_token", ACCESS_TOKEN);
+    map.put("token_type", "bearer");
+
+    int expectedResponseCode = 401;
+    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+
+    // Act
+    server().grant(request)
+            .whenComplete((response, e) -> {
+              actualResponse = response;
+            });
+
+    await().atMost(1000, MILLISECONDS)
+           .until(() -> actualResponse != null);
+
+    // Assert
+    assertResponse(expectedResponseCode, expectedResponseHeader, null, actualResponse);
+    Assert.assertTrue(actualResponse.getBody()
+                                    .contains("error=" + ErrorCode.INVALID_CLIENT + "&"));
+  }
+
+  @Test
+  public void grant_FAILURE_Grant_type_not_allowed() throws Exception {
+    // Arrange
+    isGrantTypeAllowed = false;
+
+    // Arrange - Request
+    ImmutableMap<String, String> requestHeader =
+        imbs().put("Authorization", "Basic " + Base64.getEncoder()
+                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
               .build();
     String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);

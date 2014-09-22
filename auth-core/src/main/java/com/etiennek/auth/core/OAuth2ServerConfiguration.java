@@ -12,7 +12,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
 
-import com.etiennek.auth.core.Const.DefaultGrantType;
+import static com.etiennek.auth.core.Const.*;
 import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.model.func.GenerateToken.GenerateTokenRes;
@@ -149,10 +149,10 @@ public class OAuth2ServerConfiguration {
     public Builder withAuthCodeGrantTypeSupport(RequiredFunctions.AuthCodeGrantType requiredFunctions) {
       if (requiredFunctions == null) {
         config.funcs.authCode = Optional.empty();
-        supportedGrantTypes.remove(DefaultGrantType.AUTHORIZATION_CODE.toString());
+        supportedGrantTypes.remove(GRANT_AUTHORIZATION_CODE);
       } else {
         config.funcs.authCode = Optional.of(requiredFunctions);
-        supportedGrantTypes.add(DefaultGrantType.AUTHORIZATION_CODE.toString());
+        supportedGrantTypes.add(GRANT_AUTHORIZATION_CODE);
       };
       return this;
     }
@@ -160,10 +160,10 @@ public class OAuth2ServerConfiguration {
     public Builder withPasswordGrantTypeSupport(RequiredFunctions.PasswordGrantType requiredFunctions) {
       if (requiredFunctions == null) {
         config.funcs.password = Optional.empty();
-        supportedGrantTypes.remove(DefaultGrantType.PASSWORD.toString());
+        supportedGrantTypes.remove(GRANT_PASSWORD);
       } else {
         config.funcs.password = Optional.of(requiredFunctions);
-        supportedGrantTypes.add(DefaultGrantType.PASSWORD.toString());
+        supportedGrantTypes.add(GRANT_PASSWORD);
       };
       return this;
     }
@@ -171,10 +171,10 @@ public class OAuth2ServerConfiguration {
     public Builder withRefreshTokenGrantTypeSupport(RequiredFunctions.RefreshTokenGrantType requiredFunctions) {
       if (requiredFunctions == null) {
         config.funcs.refreshToken = Optional.empty();
-        supportedGrantTypes.remove(DefaultGrantType.REFRESH_TOKEN.toString());
+        supportedGrantTypes.remove(GRANT_REFRESH_TOKEN);
       } else {
         config.funcs.refreshToken = Optional.of(requiredFunctions);
-        supportedGrantTypes.add(DefaultGrantType.REFRESH_TOKEN.toString());
+        supportedGrantTypes.add(GRANT_REFRESH_TOKEN);
       };
       return this;
     }

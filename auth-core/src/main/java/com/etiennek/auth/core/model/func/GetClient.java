@@ -13,8 +13,8 @@ public interface GetClient {
   public class GetClientRes {
     public final Optional<Client> client;
 
-    public GetClientRes(Client client) {
-      this.client = client == null ? Optional.empty() : Optional.of(client);
+    public GetClientRes(Optional<Client> client) {
+      this.client = client == null ? Optional.empty() : client;
     }
   }
 

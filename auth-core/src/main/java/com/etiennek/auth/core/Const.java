@@ -12,16 +12,10 @@ public class Const {
   // Keys
   public static final String KEY_GRANT_TYPE = "grant_type";
 
-  // Enums
-  public enum DefaultGrantType {
-    AUTHORIZATION_CODE, PASSWORD, REFRESH_TOKEN, CLIENT_CREDENTIALS;
-
-    @Override
-    public String toString() {
-      return super.toString()
-                  .toLowerCase();
-    }
-
-  }
-
+  // Grant Types
+  public static final String GRANT_AUTHORIZATION_CODE = "authorization_code";
+  public static final String GRANT_PASSWORD = "password";
+  public static final String GRANT_REFRESH_TOKEN = "refresh_token";
+  public static final String GRANT_CLIENT_CREDENTIALS = "client_credentials";
+  
 }

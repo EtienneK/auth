@@ -8,7 +8,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import org.junit.Assert;
 
 import com.etiennek.auth.core.model.AccessToken;
 import com.etiennek.auth.core.model.Client;
@@ -20,7 +23,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 
-public class TestBase {
+public abstract class TestBase {
 
   public static final Duration ACCESS_TOKEN_LIFETIME = Duration.ofHours(2);
   public static final String ACCESS_TOKEN = "fewEWFefwhj23bnjklnhfew";
@@ -42,12 +45,18 @@ public class TestBase {
   private OAuth2ServerConfiguration config;
   OAuth2ServerConfiguration.Builder configBuilder;
 
-  Response actualResponse;
+  boolean isGrantTypeAllowed;
+  Optional<Client> client;
+  Optional<User> user;
 
-  LocalDateTime now = LocalDateTime.of(2014, 9, 5, 10, 23, 45, 930);
+  Response actualResponse;
 
   public void init() {
     actualResponse = null;
+
+    isGrantTypeAllowed = true;
+    client = Optional.of(new Client());
+    user = Optional.of(new User(USER_ID));
 
     requiredFunctions = new RequiredFunctions() {
       @Override
@@ -57,19 +66,38 @@ public class TestBase {
 
       @Override
       public CompletableFuture<GetClientRes> getClient(String clientId, String clientSecret) {
-        if (!CLIENT_ID.equals(clientId))
-          return CompletableFuture.completedFuture(new GetClientRes(null));
-        return CompletableFuture.completedFuture(new GetClientRes(new Client()));
+        Assert.assertEquals(CLIENT_ID, clientId);
+        Assert.assertEquals(CLIENT_SECRET, clientSecret);
+        return CompletableFuture.completedFuture(new GetClientRes(client));
       }
 
       @Override
       public CompletableFuture<IsGrantTypeAllowedRes> isGrantTypeAllowed(String clientId, String grantType) {
-        return CompletableFuture.completedFuture(new IsGrantTypeAllowedRes(true));
+        Assert.assertEquals(CLIENT_ID, clientId);
+        Assert.assertNotNull(grantType);
+        return CompletableFuture.completedFuture(new IsGrantTypeAllowedRes(isGrantTypeAllowed));
       }
 
       @Override
       public CompletableFuture<Void> saveAccessToken(String accessToken, String clientId, User user,
-          LocalDateTime expires) {
+          Optional<LocalDateTime> expires) {
+        Assert.assertEquals(ACCESS_TOKEN, accessToken);
+        Assert.assertEquals(CLIENT_ID, clientId);
+        Assert.assertEquals(new User(USER_ID), user);
+        Assert.assertEquals(config.getAccessTokenLifetime()
+                                  .isPresent(), expires.isPresent());
+
+        if (config.getAccessTokenLifetime()
+                  .isPresent()) {
+          Assert.assertTrue(LocalDateTime.now()
+                                         .plus(ACCESS_TOKEN_LIFETIME)
+                                         .minusSeconds(1)
+                                         .isBefore(expires.get()));
+          Assert.assertTrue(LocalDateTime.now()
+                                         .plus(ACCESS_TOKEN_LIFETIME)
+                                         .plusSeconds(1)
+                                         .isAfter(expires.get()));
+        }
         return CompletableFuture.completedFuture(null);
       }
     };
@@ -77,7 +105,9 @@ public class TestBase {
     passwordRequiredFunctions = new RequiredFunctions.PasswordGrantType() {
       @Override
       public CompletableFuture<GetUserRes> getUser(String username, String password) {
-        return CompletableFuture.completedFuture(new GetUserRes(new User(USER_ID)));
+        Assert.assertEquals(USER_ID, username);
+        Assert.assertEquals(USER_PASSWORD, password);
+        return CompletableFuture.completedFuture(new GetUserRes(user));
       }
     };
 
@@ -94,7 +124,25 @@ public class TestBase {
 
       @Override
       public CompletableFuture<Void> saveRefreshToken(String refreshToken, String clientId, User user,
-          LocalDateTime expires) {
+          Optional<LocalDateTime> expires) {
+
+        Assert.assertEquals(REFRESH_TOKEN, refreshToken);
+        Assert.assertEquals(CLIENT_ID, clientId);
+        Assert.assertEquals(new User(USER_ID), user);
+        Assert.assertEquals(config.getRefreshTokenLifetime()
+                                  .isPresent(), expires.isPresent());
+
+        if (config.getRefreshTokenLifetime()
+                  .isPresent()) {
+          Assert.assertTrue(LocalDateTime.now()
+                                         .plus(REFRESH_TOKEN_LIFETIME)
+                                         .minusSeconds(1)
+                                         .isBefore(expires.get()));
+          Assert.assertTrue(LocalDateTime.now()
+                                         .plus(REFRESH_TOKEN_LIFETIME)
+                                         .plusSeconds(1)
+                                         .isAfter(expires.get()));
+        }
         return CompletableFuture.completedFuture(null);
       }
     };
