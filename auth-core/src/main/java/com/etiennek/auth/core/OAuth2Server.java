@@ -13,7 +13,7 @@ import static com.etiennek.auth.core.model.ErrorCode.*;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.model.User;
 import com.etiennek.auth.core.resp.AccessTokenResponse;
-import com.etiennek.auth.core.resp.GrantErrorResponse;
+import com.etiennek.auth.core.resp.ErrorResponse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -210,17 +210,17 @@ public class OAuth2Server {
           refreshToken == null ? Optional.empty() : Optional.of(refreshToken)));
     }
 
-    public GrantErrorResponse generateErrorResponse(Throwable e) {
+    public ErrorResponse generateErrorResponse(Throwable e) {
       Throwable cause = e.getCause();
       if (e instanceof CompletionException && cause instanceof OAuth2Exception) {
         String message = cause.getMessage();
-        return new GrantErrorResponse(((OAuth2Exception) cause).getErrorCode(), message);
+        return new ErrorResponse(((OAuth2Exception) cause).getErrorCode(), message);
       } else if (e instanceof OAuth2Exception) {
         String message = e.getMessage();
-        return new GrantErrorResponse(((OAuth2Exception) e).getErrorCode(), message);
+        return new ErrorResponse(((OAuth2Exception) e).getErrorCode(), message);
       }
       // TODO: Logging
-      return new GrantErrorResponse(SERVER_ERROR, "An unknown error has occured.");
+      return new ErrorResponse(SERVER_ERROR, "An unknown error has occured.");
     }
 
     // Grants

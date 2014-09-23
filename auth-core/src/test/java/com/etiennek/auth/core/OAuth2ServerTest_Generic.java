@@ -225,7 +225,9 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    ImmutableMap<String, String> expectedResponseHeader =
+        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
+                                           .build());
 
     // Act
     server().grant(request)
@@ -262,7 +264,9 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    ImmutableMap<String, String> expectedResponseHeader =
+        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
+                                           .build());
 
     // Act
     server().grant(request)
@@ -299,7 +303,9 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    ImmutableMap<String, String> expectedResponseHeader =
+        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
+                                           .build());
 
     // Act
     server().grant(request)

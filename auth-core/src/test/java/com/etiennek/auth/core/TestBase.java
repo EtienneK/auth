@@ -7,6 +7,7 @@ import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -206,9 +207,16 @@ public abstract class TestBase {
   }
 
   ImmutableMap<String, String> urlFormEncodedResponseHeader() {
+    return urlFormEncodedResponseHeader(null);
+  }
+
+  ImmutableMap<String, String> urlFormEncodedResponseHeader(Map<String, String> extraHeaders) {
+    if (extraHeaders == null)
+      extraHeaders = new HashMap<>();
     return imbs().put("Content-Type", "application/x-www-form-urlencoded")
                  .put("Cache-Control", "no-store")
                  .put("Pragma", "no-cache")
+                 .putAll(extraHeaders)
                  .build();
   }
 
