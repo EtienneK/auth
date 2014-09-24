@@ -8,12 +8,15 @@
 
   <modules>
     <module>auth-core</module>
+    <module>auth-servlet</module>
+    <module>auth-examples</module>
   </modules>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <!-- Versions -->
+    <auth.version>0.0.1-SNAPSHOT</auth.version>
     <guava.version>18.0</guava.version>
     <gson.version>2.3</gson.version>
     <junit.version>4.11</junit.version>
@@ -46,12 +49,25 @@
 
   <dependencyManagement>
     <dependencies>
+
+      <!-- Auth -->
+      <dependency>
+        <groupId>com.etiennek.auth</groupId>
+        <artifactId>auth-core</artifactId>
+        <version>${auth.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.etiennek.auth</groupId>
+        <artifactId>auth-servlet</artifactId>
+        <version>${auth.version}</version>
+      </dependency>
+
+      <!-- Google -->
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
       </dependency>
-
       <dependency>
         <groupId>com.google.code.gson</groupId>
         <artifactId>gson</artifactId>

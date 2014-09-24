@@ -1,5 +1,6 @@
 package com.etiennek.auth.core.model.func;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import com.etiennek.auth.core.model.AccessToken;
@@ -10,10 +11,10 @@ public interface GetAccessToken {
 
 
   public class GetAccessTokenRes {
-    public final AccessToken accessToken;
+    public final Optional<AccessToken> accessToken;
 
-    public GetAccessTokenRes(AccessToken accessToken) {
-      this.accessToken = accessToken;
+    public GetAccessTokenRes(Optional<AccessToken> accessToken) {
+      this.accessToken = accessToken == null ? Optional.empty() : accessToken;
     }
   }
 }

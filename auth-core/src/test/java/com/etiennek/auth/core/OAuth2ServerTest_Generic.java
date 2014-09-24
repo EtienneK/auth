@@ -39,7 +39,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     String expectedResponseBody = gson.toJson(map);
 
     // Act
-    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_ID, USER_PASSWORD))
+    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_USERNAME, USER_PASSWORD))
             .whenComplete((response, e) -> {
               actualResponse = response;
             });
@@ -67,7 +67,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     String expectedResponseBody = gson.toJson(map);
 
     // Act
-    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_ID, USER_PASSWORD))
+    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_USERNAME, USER_PASSWORD))
             .whenComplete((response, e) -> {
               actualResponse = response;
             });
@@ -97,7 +97,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     String expectedResponseBody = gson.toJson(map);
 
     // Act
-    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_ID, USER_PASSWORD))
+    server().grant(newPasswordGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, USER_USERNAME, USER_PASSWORD))
             .whenComplete((response, e) -> {
               actualResponse = response;
             });
@@ -117,7 +117,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
                                                      .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED + "_FAIL")
               .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
@@ -151,7 +151,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
                                                      .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
               .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("GET", requestHeader, requestBody);
 
     // Arrange - Expected Response
@@ -185,7 +185,8 @@ public class OAuth2ServerTest_Generic extends TestBase {
                                                      .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
               .build();
-    String requestBody = "grant_type=password_FAIL&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody =
+        "grant_type=password_FAIL&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
@@ -216,7 +217,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     // Arrange - Request
     ImmutableMap<String, String> requestHeader = imbs().put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
                                                        .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
@@ -255,7 +256,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
                                                      .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
               .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
@@ -294,7 +295,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
                                                      .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
               .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
               .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_ID) + "&password=" + encode(USER_PASSWORD);
+    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
     Request request = new Request("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response

@@ -9,7 +9,7 @@ import com.etiennek.auth.core.model.User;
 @FunctionalInterface
 public interface SaveRefreshToken {
 
-  CompletableFuture<Void> saveRefreshToken(String refreshToken, String clientId, User user,
+  CompletableFuture<Void> saveRefreshToken(String refreshToken, String clientId, String userId,
       Optional<LocalDateTime> expires);
 
 }

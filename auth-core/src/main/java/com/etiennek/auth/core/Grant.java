@@ -21,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import com.etiennek.auth.core.model.RefreshToken;
 import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
-import com.etiennek.auth.core.model.User;
 import com.etiennek.auth.core.model.RequiredFunctions.RefreshTokenGrantType;
 import com.etiennek.auth.core.resp.AccessTokenResponse;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +42,7 @@ class Grant {
   private String refreshToken;
   private String grantType;
 
-  private User user;
+  private String userId;
 
   public Grant(OAuth2ServerConfiguration config, Request request) {
     this.config = config;
@@ -155,7 +154,7 @@ class Grant {
     } else {
       expires = Optional.empty();
     }
-    return requiredFuncs.saveAccessToken(accessToken, clientId, user, expires);
+    return requiredFuncs.saveAccessToken(accessToken, clientId, userId, expires);
   }
 
   CompletableFuture<Void> generateRefreshToken(Void v) {
@@ -191,7 +190,7 @@ class Grant {
     return config.getFuncs()
                  .getRefreshToken()
                  .get()
-                 .saveRefreshToken(refreshToken, clientId, user, expires);
+                 .saveRefreshToken(refreshToken, clientId, userId, expires);
   }
 
   CompletableFuture<Response> sendResponse(Void v) {
@@ -216,7 +215,8 @@ class Grant {
                  .thenAccept((result) -> {
                    checkNotNull(result);
                    if (result.user.isPresent()) {
-                     user = result.user.get();
+                     userId = result.user.get()
+                                         .getId();
                    } else {
                      throw new OAuth2Exception(INVALID_GRANT, "User credentials are invalid.");
                    }
@@ -231,7 +231,8 @@ class Grant {
                  .thenAccept((result) -> {
                    checkNotNull(result);
                    if (result.user.isPresent()) {
-                     user = result.user.get();
+                     userId = result.user.get()
+                                         .getId();
                    } else {
                      throw new OAuth2Exception(INVALID_GRANT, "Client credentials are invalid.");
                    }
@@ -265,7 +266,7 @@ class Grant {
                                 });
                   }
 
-                  user = new User(checkNotNull(refreshToken.getUserId()));
+                  userId = checkNotNull(refreshToken.getUserId());
                   return funcs.revokeRefreshToken(token);
                 });
   }

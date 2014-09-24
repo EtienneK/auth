@@ -8,6 +8,6 @@ import com.etiennek.auth.core.model.User;
 
 @FunctionalInterface
 public interface SaveAccessToken {
-  CompletableFuture<Void> saveAccessToken(String accessToken, String clientId, User user,
+  CompletableFuture<Void> saveAccessToken(String accessToken, String clientId, String userId,
       Optional<LocalDateTime> expires);
 }
