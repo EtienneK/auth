@@ -7,6 +7,10 @@ public class User {
     this.id = id;
   }
 
+  public String getId() {
+    return id;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;

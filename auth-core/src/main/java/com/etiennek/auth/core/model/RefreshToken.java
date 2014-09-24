@@ -19,7 +19,16 @@ public class RefreshToken {
     this.expires = expires;
   }
 
+  public String getClientId() {
+    return clientId;
+  }
+
+  public String getUserId() {
+    return userId;
+  }
+
   public boolean hasExpired(LocalDateTime now) {
     return expires != null && expires.isBefore(now);
   }
+
 }

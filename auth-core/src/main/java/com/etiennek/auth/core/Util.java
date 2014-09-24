@@ -14,7 +14,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-public class Util {
+class Util {
 
   static Optional<ImmutableList<String>> getBasicAuthCredentialsHeader(String authHeaderValue) {
     try {

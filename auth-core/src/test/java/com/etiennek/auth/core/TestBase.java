@@ -26,6 +26,7 @@ import com.google.gson.Gson;
 
 public abstract class TestBase {
 
+  public static final LocalDateTime NOW = LocalDateTime.of(2014, 9, 24, 11, 05, 28, 382);
   public static final Duration ACCESS_TOKEN_LIFETIME = Duration.ofHours(2);
   public static final String ACCESS_TOKEN = "fewEWFefwhj23bnjklnhfew";
   public static final String REFRESH_TOKEN = "erjkhh#$%#334345jkhgerkn";
@@ -38,28 +39,35 @@ public abstract class TestBase {
   Gson gson = new Gson();
 
   RequiredFunctions requiredFunctions;
-  // private RequiredFunctions.AuthCodeGrantType authCodeRequiredFunctions;
   RequiredFunctions.PasswordGrantType passwordRequiredFunctions;
   RequiredFunctions.RefreshTokenGrantType refreshTokenRequiredFunctions;
-  RequiredFunctions.TokenGeneration tokenGenerationRequiredFunctions;
 
   private OAuth2ServerConfiguration config;
   OAuth2ServerConfiguration.Builder configBuilder;
 
+  LocalDateTime now;
   boolean isGrantTypeAllowed;
   Optional<Client> client;
   Optional<User> user;
+  Optional<RefreshToken> refreshToken;
 
   Response actualResponse;
 
   public void init() {
+    now = NOW;
     actualResponse = null;
 
     isGrantTypeAllowed = true;
     client = Optional.of(new Client());
     user = Optional.of(new User(USER_ID));
+    refreshToken = Optional.of(new RefreshToken(CLIENT_ID, USER_ID));
 
     requiredFunctions = new RequiredFunctions() {
+      @Override
+      public LocalDateTime getNow() {
+        return now;
+      }
+
       @Override
       public CompletableFuture<GetAccessTokenRes> getAccessToken(String bearerToken) {
         return CompletableFuture.completedFuture(new GetAccessTokenRes(new AccessToken(USER_ID)));
@@ -90,16 +98,33 @@ public abstract class TestBase {
 
         if (config.getAccessTokenLifetime()
                   .isPresent()) {
-          Assert.assertTrue(LocalDateTime.now()
-                                         .plus(ACCESS_TOKEN_LIFETIME)
-                                         .minusSeconds(1)
-                                         .isBefore(expires.get()));
-          Assert.assertTrue(LocalDateTime.now()
-                                         .plus(ACCESS_TOKEN_LIFETIME)
-                                         .plusSeconds(1)
-                                         .isAfter(expires.get()));
+          Assert.assertTrue(now.plus(ACCESS_TOKEN_LIFETIME)
+                               .minusNanos(1)
+                               .isBefore(expires.get()));
+          Assert.assertTrue(now.plus(ACCESS_TOKEN_LIFETIME)
+                               .plusNanos(1)
+                               .isAfter(expires.get()));
         }
         return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<GenerateTokenRes> generateToken(TokenType tokenType) {
+        CompletableFuture<GenerateTokenRes> ret = new CompletableFuture<>();
+        new Thread("generateTokenThread") {
+          public void run() {
+            try {
+              sleep(100);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+            if (tokenType == TokenType.ACCESS)
+              ret.complete(new GenerateTokenRes(ACCESS_TOKEN));
+            else
+              ret.complete(new GenerateTokenRes(REFRESH_TOKEN));
+          };
+        }.start();
+        return ret;
       }
     };
 
@@ -115,12 +140,13 @@ public abstract class TestBase {
     refreshTokenRequiredFunctions = new RequiredFunctions.RefreshTokenGrantType() {
       @Override
       public CompletableFuture<Void> revokeRefreshToken(String refreshToken) {
+        Assert.assertEquals(REFRESH_TOKEN, refreshToken);
         return CompletableFuture.completedFuture(null);
       }
 
       @Override
-      public CompletableFuture<GetRefreshTokenRes> getRefreshToken(String refreshToken) {
-        return CompletableFuture.completedFuture(new GetRefreshTokenRes(new RefreshToken(CLIENT_ID, USER_ID)));
+      public CompletableFuture<GetRefreshTokenRes> getRefreshToken(String rt) {
+        return CompletableFuture.completedFuture(new GetRefreshTokenRes(refreshToken));
       }
 
       @Override
@@ -135,39 +161,14 @@ public abstract class TestBase {
 
         if (config.getRefreshTokenLifetime()
                   .isPresent()) {
-          Assert.assertTrue(LocalDateTime.now()
-                                         .plus(REFRESH_TOKEN_LIFETIME)
-                                         .minusSeconds(1)
-                                         .isBefore(expires.get()));
-          Assert.assertTrue(LocalDateTime.now()
-                                         .plus(REFRESH_TOKEN_LIFETIME)
-                                         .plusSeconds(1)
-                                         .isAfter(expires.get()));
+          Assert.assertTrue(now.plus(REFRESH_TOKEN_LIFETIME)
+                               .minusNanos(1)
+                               .isBefore(expires.get()));
+          Assert.assertTrue(now.plus(REFRESH_TOKEN_LIFETIME)
+                               .plusNanos(1)
+                               .isAfter(expires.get()));
         }
         return CompletableFuture.completedFuture(null);
-      }
-    };
-
-    tokenGenerationRequiredFunctions = new RequiredFunctions.TokenGeneration() {
-      @Override
-      public CompletableFuture<GenerateTokenRes> generateToken(TokenType tokenType) {
-        CompletableFuture<GenerateTokenRes> ret = new CompletableFuture<>();
-
-        new Thread("generateTokenThread") {
-          public void run() {
-            try {
-              sleep(100);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
-            if (tokenType == TokenType.ACCESS)
-              ret.complete(new GenerateTokenRes(ACCESS_TOKEN));
-            else
-              ret.complete(new GenerateTokenRes(REFRESH_TOKEN));
-          };
-        }.start();
-
-        return ret;
       }
     };
 
@@ -175,8 +176,6 @@ public abstract class TestBase {
         new OAuth2ServerConfiguration.Builder(requiredFunctions).withPasswordGrantTypeSupport(passwordRequiredFunctions)
                                                                 .withRefreshTokenGrantTypeSupport(
                                                                     refreshTokenRequiredFunctions)
-                                                                .withTokenGenerationSupport(
-                                                                    tokenGenerationRequiredFunctions)
                                                                 .withAccessTokenLifetime(ACCESS_TOKEN_LIFETIME)
                                                                 .withRefreshTokenLifetime(REFRESH_TOKEN_LIFETIME);
   }

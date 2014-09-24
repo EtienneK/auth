@@ -1,31 +1,20 @@
 package com.etiennek.auth.core;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.Consumer;
 
 import static com.etiennek.auth.core.Const.*;
 import com.etiennek.auth.core.model.RequiredFunctions;
-import com.etiennek.auth.core.model.TokenType;
-import com.etiennek.auth.core.model.func.GenerateToken.GenerateTokenRes;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 public class OAuth2ServerConfiguration {
 
-  private Executor executor;
   private Regex regex;
   private Funcs funcs;
 
-  private Consumer<Exception> debug;
   private Optional<Duration> accessTokenLifetime;
   private Optional<Duration> refreshTokenLifetime;
   private Duration authCodeLifetime;
@@ -36,20 +25,12 @@ public class OAuth2ServerConfiguration {
     funcs = new Funcs();
   }
 
-  public Executor getExecutor() {
-    return executor;
-  }
-
   public Regex getRegex() {
     return regex;
   }
 
   public Funcs getFuncs() {
     return funcs;
-  }
-
-  public Consumer<Exception> getDebug() {
-    return debug;
   }
 
   public Optional<Duration> getAccessTokenLifetime() {
@@ -78,14 +59,14 @@ public class OAuth2ServerConfiguration {
   }
 
   public class Funcs {
-    private RequiredFunctions req;
+    private RequiredFunctions required;
     private Optional<RequiredFunctions.AuthCodeGrantType> authCode = Optional.empty();
     private Optional<RequiredFunctions.PasswordGrantType> password = Optional.empty();
     private Optional<RequiredFunctions.RefreshTokenGrantType> refreshToken = Optional.empty();
-    private RequiredFunctions.TokenGeneration tokenGeneration;
+    private Optional<RequiredFunctions.ClientCredentialsGrantType> clientCreds = Optional.empty();
 
-    public RequiredFunctions getReq() {
-      return req;
+    public RequiredFunctions getRequired() {
+      return required;
     }
 
     public Optional<RequiredFunctions.AuthCodeGrantType> getAuthCode() {
@@ -96,13 +77,14 @@ public class OAuth2ServerConfiguration {
       return password;
     }
 
+    public Optional<RequiredFunctions.ClientCredentialsGrantType> getClientCreds() {
+      return clientCreds;
+    }
+
     public Optional<RequiredFunctions.RefreshTokenGrantType> getRefreshToken() {
       return refreshToken;
     }
 
-    public RequiredFunctions.TokenGeneration getTokenGeneration() {
-      return tokenGeneration;
-    }
   }
 
   public static class Builder {
@@ -111,19 +93,8 @@ public class OAuth2ServerConfiguration {
     private List<String> supportedGrantTypes = new ArrayList<>();
 
     public Builder(RequiredFunctions requiredFunctions) {
-      config.funcs.req =
-          requiredFunctions =
-              Preconditions.checkNotNull(requiredFunctions, "No requiredFunctions supplied to OAuth2Server Builder");
-    }
-
-    public Builder withExecutor(Executor executor) {
-      config.executor = executor;
-      return this;
-    }
-
-    public Builder withDebug(Consumer<Exception> debug) {
-      config.debug = debug;
-      return this;
+      config.funcs.required =
+          Preconditions.checkNotNull(requiredFunctions, "No requiredFunctions supplied to OAuth2Server Builder");
     }
 
     public Builder withAccessTokenLifetime(Duration accessTokenLifetime) {
@@ -168,6 +139,17 @@ public class OAuth2ServerConfiguration {
       return this;
     }
 
+    public Builder withClientCredentialsGrantTypeSupport(RequiredFunctions.ClientCredentialsGrantType requiredFunctions) {
+      if (requiredFunctions == null) {
+        config.funcs.clientCreds = Optional.empty();
+        supportedGrantTypes.remove(GRANT_CLIENT_CREDENTIALS);
+      } else {
+        config.funcs.clientCreds = Optional.of(requiredFunctions);
+        supportedGrantTypes.add(GRANT_CLIENT_CREDENTIALS);
+      };
+      return this;
+    }
+
     public Builder withRefreshTokenGrantTypeSupport(RequiredFunctions.RefreshTokenGrantType requiredFunctions) {
       if (requiredFunctions == null) {
         config.funcs.refreshToken = Optional.empty();
@@ -179,20 +161,7 @@ public class OAuth2ServerConfiguration {
       return this;
     }
 
-    public Builder withTokenGenerationSupport(RequiredFunctions.TokenGeneration requiredFunctions) {
-      config.funcs.tokenGeneration = requiredFunctions;
-      return this;
-    }
-
     public OAuth2ServerConfiguration build() {
-      if (config.executor == null) {
-        config.executor = ForkJoinPool.commonPool();
-      }
-      if (config.debug == null) {
-        config.debug = (exception) -> {
-          exception.printStackTrace();
-        };
-      }
       if (config.accessTokenLifetime == null) {
         config.accessTokenLifetime = Optional.of(Duration.ofHours(1));
       }
@@ -205,29 +174,12 @@ public class OAuth2ServerConfiguration {
       if (config.regex.clientId == null) {
         config.regex.clientId = "^[A-Za-z0-9-_]{3,40}$";
       }
-      if (config.funcs.tokenGeneration == null) {
-        config.funcs.tokenGeneration = this::generateTokenDefault;
-      }
 
       config.supportedGrantTypes = ImmutableList.copyOf(supportedGrantTypes);
 
       return config;
     }
 
-    private CompletableFuture<GenerateTokenRes> generateTokenDefault(TokenType tokenType) {
-      CompletableFuture<GenerateTokenRes> ret = new CompletableFuture<>();
-      try {
-        byte[] randomBytes = new byte[32];
-        SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-        secureRandom.nextBytes(randomBytes);
-        ret.complete(new GenerateTokenRes(Base64.getEncoder()
-                                                .encodeToString(randomBytes)));
-      } catch (NoSuchAlgorithmException e) {
-        // TODO: Error handling
-        ret.completeExceptionally(e);
-      }
-      return ret;
-    }
   }
 
 }
