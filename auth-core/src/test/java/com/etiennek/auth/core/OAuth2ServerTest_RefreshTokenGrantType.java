@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,7 +15,6 @@ import org.junit.Test;
 
 import com.etiennek.auth.core.model.ErrorCode;
 import com.etiennek.auth.core.model.RefreshToken;
-import com.google.common.collect.ImmutableMap;
 
 public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
 
@@ -36,7 +36,7 @@ public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 200;
-    Map<String, String> expectedResponseHeader = jsonResponseHeader();
+    Map<String, String[]> expectedResponseHeader = jsonResponseHeader();
     String expectedResponseBody = gson.toJson(map);
 
     // Act
@@ -65,7 +65,7 @@ public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(newRefreshTokenGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN))
@@ -95,7 +95,7 @@ public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(newRefreshTokenGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN))
@@ -125,7 +125,7 @@ public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(newRefreshTokenGrantTypeRequest(CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN))
@@ -142,14 +142,18 @@ public class OAuth2ServerTest_RefreshTokenGrantType extends TestBase {
                                     .contains("error=" + ErrorCode.INVALID_GRANT + "&"));
   }
 
-  private Request newRefreshTokenGrantTypeRequest(String clientId, String clientSecret, String token) {
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((clientId + ":" + clientSecret).getBytes()))
-              .put("Content-Type", "application/x-www-form-urlencoded")
-              .build();
-    String requestBody = "grant_type=refresh_token&refresh_token=" + encode(token);
-    return new Request("POST", requestHeader, requestBody);
+  private FormRequest newRefreshTokenGrantTypeRequest(String clientId, String clientSecret, String token) {
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((clientId + ":" + clientSecret).getBytes())});
+    requestHeader.put("Content-Type", new String[] {"application/x-www-form-urlencoded"});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"refresh_token"});
+    requestBody.put("refresh_token", new String[] {token});
+
+    return new FormRequest("POST", requestHeader, requestBody);
   }
 
 }

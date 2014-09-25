@@ -28,8 +28,8 @@ public class ExampleServer extends OAuth2Server {
     clients.add(new Client("client2", "secret2"));
 
     List<User> users = new ArrayList<>();
-    users.add(new User("1", "user1", "password1"));
-    users.add(new User("2", "user2", "password2"));
+    users.add(new User("1", "user1", "pa$$word1"));
+    users.add(new User("2", "user2", "pa$$word2"));
 
     return new OAuth2ServerConfiguration.Builder(new RequiredFunctions() {
       @Override
@@ -68,7 +68,7 @@ public class ExampleServer extends OAuth2Server {
       public CompletableFuture<GetUserRes> getUser(String username, String password) {
         Optional<User> user = users.stream()
                                    .filter((u) -> {
-                                     return u.getId()
+                                     return u.getUsername()
                                              .equals(username) && u.getPassword()
                                                                    .equals(password);
                                    })

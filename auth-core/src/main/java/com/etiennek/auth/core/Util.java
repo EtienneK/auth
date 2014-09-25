@@ -1,28 +1,42 @@
 package com.etiennek.auth.core;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+public class Util {
 
-class Util {
+  public static boolean isNullOrEmpty(Object[] arr) {
+    return arr == null || arr.length == 0;
+  }
 
-  static Optional<ImmutableList<String>> getBasicAuthCredentialsHeader(String authHeaderValue) {
+  public static <T> T checkNotNull(T toCheck) {
+    return checkNotNull(toCheck, null);
+  }
+
+  public static <T> T checkNotNull(T toCheck, String message) {
+    if (toCheck == null) {
+      throw new NullPointerException(message);
+    }
+    return toCheck;
+  }
+
+  static Map<String, String[]> toCaseInsensitiveMap(Map<String, String[]> map) {
+    checkNotNull(map);
+    Map<String, String[]> ret = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    ret.putAll(map);
+    return ret;
+  }
+
+  static Optional<String[]> getBasicAuthCredentialsHeader(String[] authHeaderValueArr) {
     try {
-      authHeaderValue = authHeaderValue == null ? "" : authHeaderValue.trim();
-      if (!authHeaderValue.startsWith("Basic ")) {
+      String authHeaderValue = isNullOrEmpty(authHeaderValueArr) ? "" : authHeaderValueArr[0].trim();
+      if (!authHeaderValue.toLowerCase()
+                          .startsWith("basic ")) {
         return Optional.empty();
       }
-      authHeaderValue = authHeaderValue.replaceFirst("Basic", "")
+      authHeaderValue = authHeaderValue.substring(5)
                                        .trim();
       authHeaderValue = new String(Base64.getDecoder()
                                          .decode(authHeaderValue));
@@ -30,39 +44,10 @@ class Util {
       if (usernameAndPassword.length != 2) {
         return Optional.empty();
       }
-      return Optional.of(ImmutableList.of(usernameAndPassword[0], usernameAndPassword[1]));
+      return Optional.of(usernameAndPassword);
     } catch (RuntimeException e) {
       return Optional.empty();
     }
   }
 
-  static ImmutableMap<String, ImmutableList<String>> splitQuery(String body) {
-    try {
-      String[] pairs = Preconditions.checkNotNull(body)
-                                    .split("&");
-      Map<String, List<String>> queryPairs = new LinkedHashMap<>();
-      for (String pair : pairs) {
-        int equalsIndex = pair.indexOf("=");
-        String key = equalsIndex > 0 ? URLDecoder.decode(pair.substring(0, equalsIndex), "UTF-8") : pair;
-        if (!queryPairs.containsKey(key)) {
-          queryPairs.put(key, new LinkedList<String>());
-        }
-        String value =
-            equalsIndex > 0 && pair.length() > equalsIndex + 1 ? URLDecoder.decode(pair.substring(equalsIndex + 1),
-                "UTF-8") : null;
-        queryPairs.get(key)
-                  .add(value);
-      }
-
-      Map<String, ImmutableList<String>> toConvert = new LinkedHashMap<>(queryPairs.size());
-      for (String key : queryPairs.keySet()) {
-        toConvert.put(key, ImmutableList.copyOf(queryPairs.get(key)));
-      }
-
-      return ImmutableMap.copyOf(toConvert);
-    } catch (UnsupportedEncodingException e) {
-      // MUST never ever happen
-      throw Throwables.propagate(e);
-    }
-  }
 }

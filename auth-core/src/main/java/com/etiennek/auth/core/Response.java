@@ -1,25 +1,26 @@
 package com.etiennek.auth.core;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import static com.etiennek.auth.core.Util.*;
+
+import java.util.Map;
 
 public class Response {
   private int code;
-  private ImmutableMap<String, String> header;
+  private Map<String, String[]> header;
   private String body;
 
-  public Response(int code, ImmutableMap<String, String> header, String body) {
+  public Response(int code, Map<String, String[]> header, String body) {
     super();
     this.code = code;
-    this.header = Preconditions.checkNotNull(header);
-    this.body = Preconditions.checkNotNull(body);
+    this.header = checkNotNull(header);
+    this.body = checkNotNull(body);
   }
 
   public int getCode() {
     return code;
   }
 
-  public ImmutableMap<String, String> getHeader() {
+  public Map<String, String[]> getHeader() {
     return header;
   }
 
@@ -63,7 +64,7 @@ public class Response {
 
   @Override
   public String toString() {
-    return "HttpResponse [code=" + code + ", header=" + header + ", body=" + body + "]";
+    return "Response [code=" + code + ", header=" + header + ", body=" + body + "]";
   }
 
 }

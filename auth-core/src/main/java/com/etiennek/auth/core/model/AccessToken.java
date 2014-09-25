@@ -2,7 +2,7 @@ package com.etiennek.auth.core.model;
 
 import java.time.LocalDateTime;
 
-import com.google.common.base.Preconditions;
+import static com.etiennek.auth.core.Util.*;
 
 public class AccessToken {
 
@@ -16,9 +16,9 @@ public class AccessToken {
   }
 
   public AccessToken(String token, String clientId, String userId, LocalDateTime expires) {
-    this.token = Preconditions.checkNotNull(token);
-    this.clientId = Preconditions.checkNotNull(clientId);
-    this.userId = Preconditions.checkNotNull(userId);
+    this.token = checkNotNull(token);
+    this.clientId = checkNotNull(clientId);
+    this.userId = checkNotNull(userId);
     this.expires = expires;
   }
 

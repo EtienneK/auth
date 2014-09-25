@@ -1,20 +1,12 @@
 package com.etiennek.auth.core;
 
-import static com.etiennek.auth.core.Const.GRANT_CLIENT_CREDENTIALS;
-import static com.etiennek.auth.core.Const.GRANT_PASSWORD;
-import static com.etiennek.auth.core.Const.GRANT_REFRESH_TOKEN;
-import static com.etiennek.auth.core.Const.KEY_GRANT_TYPE;
-import static com.etiennek.auth.core.Const.MEDIA_X_WWW_FORM_URLENCODED;
-import static com.etiennek.auth.core.Const.METHOD_POST;
-import static com.etiennek.auth.core.Util.getBasicAuthCredentialsHeader;
-import static com.etiennek.auth.core.Util.splitQuery;
-import static com.etiennek.auth.core.model.ErrorCode.INVALID_CLIENT;
-import static com.etiennek.auth.core.model.ErrorCode.INVALID_GRANT;
-import static com.etiennek.auth.core.model.ErrorCode.INVALID_REQUEST;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.etiennek.auth.core.Const.*;
+import static com.etiennek.auth.core.model.ErrorCode.*;
+import static com.etiennek.auth.core.Util.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -23,17 +15,15 @@ import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.model.RequiredFunctions.RefreshTokenGrantType;
 import com.etiennek.auth.core.resp.AccessTokenResponse;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 class Grant {
   private OAuth2ServerConfiguration config;
 
-  private ImmutableMap<String, ImmutableList<String>> body;
+  private Map<String, String[]> body;
 
   private RequiredFunctions requiredFuncs;
 
-  private Request request;
+  private FormRequest request;
 
   private String clientId;
   private String clientSecret;
@@ -44,7 +34,7 @@ class Grant {
 
   private String userId;
 
-  public Grant(OAuth2ServerConfiguration config, Request request) {
+  public Grant(OAuth2ServerConfiguration config, FormRequest request) {
     this.config = config;
     this.request = request;
     this.requiredFuncs = config.getFuncs()
@@ -53,44 +43,39 @@ class Grant {
 
   CompletableFuture<Void> extractCredentials(Void v) {
     CompletableFuture<Void> ret = new CompletableFuture<>();
-    String contentType = request.getHeader()
-                                .get("Content-Type");
+    String[] contentTypeArr = request.getHeader()
+                                     .get("Content-Type");
 
     // Only POST via application/x-www-form-urlencoded is acceptable
     if (!request.getMethod()
-                .equalsIgnoreCase(METHOD_POST) || contentType == null
-        || !contentType.equals(MEDIA_X_WWW_FORM_URLENCODED)) {
+                .equalsIgnoreCase(METHOD_POST) || isNullOrEmpty(contentTypeArr)
+        || !contentTypeArr[0].equals(MEDIA_X_WWW_FORM_URLENCODED)) {
       throw new OAuth2Exception(INVALID_REQUEST, "Method must be POST with application/x-www-form-urlencoded encoding.");
     }
 
-    try {
-      body = splitQuery(request.getBody());
-    } catch (RuntimeException e) {
-      throw new OAuth2Exception(INVALID_REQUEST, "Invalid request body.");
-    }
+    body = request.getBody();
 
     // Grant type
-    grantType = body.containsKey(KEY_GRANT_TYPE) ? body.get(KEY_GRANT_TYPE)
-                                                       .get(0)
-                                                       .trim()
-                                                       .toLowerCase() : null;
-    if (!config.getSupportedGrantTypes()
-               .contains(grantType)) {
+    grantType =
+        body.containsKey(KEY_GRANT_TYPE) && !isNullOrEmpty(body.get(KEY_GRANT_TYPE)) ? body.get(KEY_GRANT_TYPE)[0].trim()
+                                                                                                                  .toLowerCase()
+            : null;
+    if (!config.isSupportedGrantType(grantType)) {
       throw new OAuth2Exception(INVALID_REQUEST, "Invalid or missing grant_type parameter.");
     }
 
     // Client Credentials
-    Optional<ImmutableList<String>> ccHeader = getBasicAuthCredentialsHeader(request.getHeader()
-                                                                                    .get("Authorization"));
+    Optional<String[]> ccHeader = getBasicAuthCredentialsHeader(request.getHeader()
+                                                                       .get("Authorization"));
     if (ccHeader.isPresent()) {
-      ImmutableList<String> cc = ccHeader.get();
-      clientId = cc.get(0);
+      String[] cc = ccHeader.get();
+      clientId = cc[0];
       if (clientId == null || !clientId.matches(config.getRegex()
                                                       .getClientId()) || clientId.trim()
                                                                                  .isEmpty()) {
         throw new OAuth2Exception(INVALID_CLIENT, "Missing client_id parameter.");
       }
-      clientSecret = cc.get(1);
+      clientSecret = cc[1];
       if (clientSecret == null || clientId.trim()
                                           .isEmpty()) {
         throw new OAuth2Exception(INVALID_CLIENT, "Missing client_secret parameter.");
@@ -205,10 +190,14 @@ class Grant {
     if (!body.containsKey("username") || !body.containsKey("password")) {
       throw new OAuth2Exception(INVALID_CLIENT, "Missing parameters. 'username' and 'password' are required.");
     }
-    String username = body.get("username")
-                          .get(0);
-    String password = body.get("password")
-                          .get(0);
+
+    String username = isNullOrEmpty(body.get("username")) ? null : body.get("username")[0];
+    String password = isNullOrEmpty(body.get("password")) ? null : body.get("password")[0];
+
+    if (username == null || password == null) {
+      throw new OAuth2Exception(INVALID_CLIENT, "Ivalid values for 'username' or 'password'.");
+    }
+
     return config.getFuncs()
                  .getPassword()
                  .get()
@@ -244,8 +233,10 @@ class Grant {
     if (!body.containsKey("refresh_token")) {
       throw new OAuth2Exception(INVALID_REQUEST, "No 'refresh_token' parameter.");
     }
-    String token = body.get("refresh_token")
-                       .get(0);
+    String token = isNullOrEmpty(body.get("refresh_token")) ? null : body.get("refresh_token")[0];
+    if (token == null) {
+      throw new OAuth2Exception(INVALID_REQUEST, "Ivalid value for 'refresh_token'.");
+    }
 
     RefreshTokenGrantType funcs = config.getFuncs()
                                         .getRefreshToken()

@@ -1,11 +1,10 @@
 package com.etiennek.auth.examples;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.util.Collections;
 import java.util.Enumeration;
-import java.util.logging.Logger;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
@@ -13,13 +12,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.etiennek.auth.core.FormRequest;
 import com.etiennek.auth.core.OAuth2Server;
-import com.etiennek.auth.core.Request;
-import com.google.common.base.Charsets;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.io.CharStreams;
 
 public class TokenServlet extends HttpServlet {
   private static final long serialVersionUID = 7569068162393846152L;
@@ -33,28 +27,29 @@ public class TokenServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    String body = CharStreams.toString(new InputStreamReader(req.getInputStream(), Charsets.UTF_8));
     AsyncContext context = req.startAsync();
-    server.grant(new Request("POST", header(req), body))
+    server.grant(new FormRequest(req.getMethod(), header(req), req.getParameterMap()))
           .thenAccept((response) -> {
             try {
+              // TODO: headers
               resp.setStatus(response.getCode());
               resp.getWriter()
                   .write(response.getBody());
               context.complete();
             } catch (Exception e) {
-              throw Throwables.propagate(e);
+              throw new RuntimeException(e);
             }
           });
   }
 
-  private static ImmutableMap<String, String> header(HttpServletRequest req) {
-    ImmutableMap.Builder<String, String> builder = new Builder<>();
+  private static Map<String, String[]> header(HttpServletRequest req) {
+    Map<String, String[]> ret = new LinkedHashMap<>();
     Enumeration<String> headerNames = req.getHeaderNames();
     while (headerNames.hasMoreElements()) {
       String headerName = headerNames.nextElement();
-      builder.put(headerName.toLowerCase(), req.getHeader(headerName));
+      ret.put(headerName.toLowerCase(), Collections.list(req.getHeaders(headerName))
+                                                   .toArray(new String[0]));
     }
-    return builder.build();
+    return ret;
   }
 }

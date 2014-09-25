@@ -7,8 +7,7 @@ import java.util.Optional;
 
 import static com.etiennek.auth.core.Const.*;
 import com.etiennek.auth.core.model.RequiredFunctions;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import static com.etiennek.auth.core.Util.*;
 
 public class OAuth2ServerConfiguration {
 
@@ -18,7 +17,7 @@ public class OAuth2ServerConfiguration {
   private Optional<Duration> accessTokenLifetime;
   private Optional<Duration> refreshTokenLifetime;
   private Duration authCodeLifetime;
-  private ImmutableList<String> supportedGrantTypes;
+  private String[] supportedGrantTypes;
 
   private OAuth2ServerConfiguration() {
     regex = new Regex();
@@ -45,8 +44,13 @@ public class OAuth2ServerConfiguration {
     return authCodeLifetime;
   }
 
-  public ImmutableList<String> getSupportedGrantTypes() {
-    return supportedGrantTypes;
+  public boolean isSupportedGrantType(String toCheck) {
+    for (String grantType : supportedGrantTypes) {
+      if (grantType.equals(toCheck)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public class Regex {
@@ -93,8 +97,7 @@ public class OAuth2ServerConfiguration {
     private List<String> supportedGrantTypes = new ArrayList<>();
 
     public Builder(RequiredFunctions requiredFunctions) {
-      config.funcs.required =
-          Preconditions.checkNotNull(requiredFunctions, "No requiredFunctions supplied to OAuth2Server Builder");
+      config.funcs.required = checkNotNull(requiredFunctions, "No requiredFunctions supplied to OAuth2Server Builder");
     }
 
     public Builder withAccessTokenLifetime(Duration accessTokenLifetime) {
@@ -175,7 +178,7 @@ public class OAuth2ServerConfiguration {
         config.regex.clientId = "^[A-Za-z0-9-_]{3,40}$";
       }
 
-      config.supportedGrantTypes = ImmutableList.copyOf(supportedGrantTypes);
+      config.supportedGrantTypes = supportedGrantTypes.toArray(new String[0]);
 
       return config;
     }

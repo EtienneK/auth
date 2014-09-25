@@ -7,6 +7,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.Assert;
@@ -15,7 +16,6 @@ import org.junit.Test;
 
 import com.etiennek.auth.core.model.ErrorCode;
 import com.etiennek.auth.core.model.RequiredFunctions;
-import com.google.common.collect.ImmutableMap;
 
 public class OAuth2ServerTest_ClientCredentialsGrantType extends TestBase {
 
@@ -44,7 +44,7 @@ public class OAuth2ServerTest_ClientCredentialsGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 200;
-    Map<String, String> expectedResponseHeader = jsonResponseHeader();
+    Map<String, String[]> expectedResponseHeader = jsonResponseHeader();
     String expectedResponseBody = gson.toJson(map);
 
     // Act
@@ -78,7 +78,7 @@ public class OAuth2ServerTest_ClientCredentialsGrantType extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(newClientCredentialsGrantTypeRequest(CLIENT_ID, CLIENT_SECRET))
@@ -95,14 +95,17 @@ public class OAuth2ServerTest_ClientCredentialsGrantType extends TestBase {
                                     .contains("error=" + ErrorCode.INVALID_GRANT + "&"));
   }
 
-  private Request newClientCredentialsGrantTypeRequest(String clientId, String clientSecret) {
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((clientId + ":" + clientSecret).getBytes()))
-              .put("Content-Type", "application/x-www-form-urlencoded")
-              .build();
-    String requestBody = "grant_type=client_credentials";
-    return new Request("POST", requestHeader, requestBody);
+  private FormRequest newClientCredentialsGrantTypeRequest(String clientId, String clientSecret) {
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((clientId + ":" + clientSecret).getBytes())});
+    requestHeader.put("Content-Type", new String[] {"application/x-www-form-urlencoded"});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"client_credentials"});
+
+    return new FormRequest("POST", requestHeader, requestBody);
   }
 
 }

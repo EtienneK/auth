@@ -18,7 +18,7 @@ public class OAuth2Server {
     this.config = configuration;
   }
 
-  public CompletableFuture<Response> grant(Request request) {
+  public CompletableFuture<Response> grant(FormRequest request) {
     Grant grant = new Grant(config, request);
     try {
       return grant.extractCredentials(null)

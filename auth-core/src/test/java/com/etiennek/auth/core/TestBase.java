@@ -2,14 +2,13 @@ package com.etiennek.auth.core;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.Assert;
@@ -19,8 +18,6 @@ import com.etiennek.auth.core.model.RefreshToken;
 import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
 import com.etiennek.auth.core.model.User;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 
 public abstract class TestBase {
@@ -186,57 +183,64 @@ public abstract class TestBase {
     return new OAuth2Server(config);
   }
 
-  ImmutableMap.Builder<String, String> imbs() {
-    return new ImmutableMap.Builder<String, String>();
+  Map<String, String[]> jsonResponseHeader() {
+    Map<String, String[]> ret = new LinkedHashMap<>();
+    ret.put("Content-Type", new String[] {"application/json;charset=UTF-8"});
+    ret.put("Cache-Control", new String[] {"no-store"});
+    ret.put("Pragma", new String[] {"no-cache"});
+    return ret;
   }
 
-  static String encode(String toEncode) {
-    try {
-      return URLEncoder.encode(toEncode, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      // Should never happen
-      throw Throwables.propagate(e);
-    }
-  }
-
-  ImmutableMap<String, String> jsonResponseHeader() {
-    return imbs().put("Content-Type", "application/json;charset=UTF-8")
-                 .put("Cache-Control", "no-store")
-                 .put("Pragma", "no-cache")
-                 .build();
-  }
-
-  ImmutableMap<String, String> urlFormEncodedResponseHeader() {
+  Map<String, String[]> urlFormEncodedResponseHeader() {
     return urlFormEncodedResponseHeader(null);
   }
 
-  ImmutableMap<String, String> urlFormEncodedResponseHeader(Map<String, String> extraHeaders) {
+  Map<String, String[]> urlFormEncodedResponseHeader(Map<String, String[]> extraHeaders) {
+    Map<String, String[]> ret = new LinkedHashMap<>();
     if (extraHeaders == null)
-      extraHeaders = new HashMap<>();
-    return imbs().put("Content-Type", "application/x-www-form-urlencoded")
-                 .put("Cache-Control", "no-store")
-                 .put("Pragma", "no-cache")
-                 .putAll(extraHeaders)
-                 .build();
+      extraHeaders = new LinkedHashMap<>();
+    ret.put("Content-Type", new String[] {"application/x-www-form-urlencoded"});
+    ret.put("Cache-Control", new String[] {"no-store"});
+    ret.put("Pragma", new String[] {"no-cache"});
+    ret.putAll(extraHeaders);
+
+    return ret;
   }
 
-  void assertResponse(int expectedResponseCode, Map<String, String> expectedResponseHeader,
+  static void assertResponse(int expectedResponseCode, Map<String, String[]> expectedResponseHeader,
       String expectedResponseBody, Response actualResponse) {
     assertEquals(expectedResponseCode, actualResponse.getCode());
     if (expectedResponseHeader != null)
-      assertEquals(expectedResponseHeader, actualResponse.getHeader());
+      mapWithArrayValueEquals(expectedResponseHeader, actualResponse.getHeader());
     if (expectedResponseBody != null)
       assertEquals(expectedResponseBody, actualResponse.getBody());
   }
 
-  Request newPasswordGrantTypeRequest(String clientId, String clientSecret, String userId, String userPassword) {
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((clientId + ":" + clientSecret).getBytes()))
-              .put("Content-Type", "application/x-www-form-urlencoded")
-              .build();
-    String requestBody = "grant_type=password&username=" + encode(userId) + "&password=" + encode(userPassword);
-    return new Request("POST", requestHeader, requestBody);
+  private static void mapWithArrayValueEquals(Map<String, String[]> expected, Map<String, String[]> actual) {
+    assertEquals(expected.keySet(), actual.keySet());
+    for (String key : expected.keySet()) {
+      String[] expectedArr = expected.get(key);
+      String[] actualArr = actual.get(key);
+      Assert.assertEquals("Key '" + key + "' length must be equal.", expectedArr.length, actualArr.length);
+      for (int i = 0; i < expectedArr.length; i++) {
+        Assert.assertEquals("Values for Key '" + key + "' do not match.", expectedArr[i], actualArr[i]);
+      }
+    }
+  }
+
+  FormRequest newPasswordGrantTypeRequest(String clientId, String clientSecret, String userId, String userPassword) {
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((clientId + ":" + clientSecret).getBytes())});
+    requestHeader.put("Content-Type", new String[] {"application/x-www-form-urlencoded"});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {userId});
+    requestBody.put("password", new String[] {userPassword});
+
+    return new FormRequest("POST", requestHeader, requestBody);
   }
 
 }

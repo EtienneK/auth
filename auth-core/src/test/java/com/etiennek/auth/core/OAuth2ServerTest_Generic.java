@@ -5,16 +5,17 @@ import static com.jayway.awaitility.Awaitility.*;
 import static java.util.concurrent.TimeUnit.*;
 
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.etiennek.auth.core.model.ErrorCode;
-import com.google.common.collect.ImmutableMap;
 
 public class OAuth2ServerTest_Generic extends TestBase {
 
@@ -35,7 +36,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("expires_in", ACCESS_TOKEN_LIFETIME.getSeconds());
 
     int expectedResponseCode = 200;
-    Map<String, String> expectedResponseHeader = jsonResponseHeader();
+    Map<String, String[]> expectedResponseHeader = jsonResponseHeader();
     String expectedResponseBody = gson.toJson(map);
 
     // Act
@@ -63,7 +64,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("refresh_token", REFRESH_TOKEN);
 
     int expectedResponseCode = 200;
-    Map<String, String> expectedResponseHeader = jsonResponseHeader();
+    Map<String, String[]> expectedResponseHeader = jsonResponseHeader();
     String expectedResponseBody = gson.toJson(map);
 
     // Act
@@ -93,7 +94,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 200;
-    Map<String, String> expectedResponseHeader = jsonResponseHeader();
+    Map<String, String[]> expectedResponseHeader = jsonResponseHeader();
     String expectedResponseBody = gson.toJson(map);
 
     // Act
@@ -112,13 +113,17 @@ public class OAuth2ServerTest_Generic extends TestBase {
   @Test
   public void grant_FAILURE_Invalid_Request_Content_Type() throws Exception {
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
-              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED + "_FAIL")
-              .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("POST", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes())});
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED + "FAIL"});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -126,7 +131,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(request)
@@ -146,13 +151,17 @@ public class OAuth2ServerTest_Generic extends TestBase {
   @Test
   public void grant_FAILURE_Invalid_Request_Method() throws Exception {
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
-              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
-              .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("GET", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes())});
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("GET", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -160,7 +169,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(request)
@@ -180,14 +189,17 @@ public class OAuth2ServerTest_Generic extends TestBase {
   @Test
   public void grant_FAILURE_Invalid_Supported_Grant_Type() throws Exception {
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
-              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
-              .build();
-    String requestBody =
-        "grant_type=password_FAIL&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("POST", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes())});
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password_fail"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -195,7 +207,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 400;
-    Map<String, String> expectedResponseHeader = urlFormEncodedResponseHeader();
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader();
 
     // Act
     server().grant(request)
@@ -215,10 +227,14 @@ public class OAuth2ServerTest_Generic extends TestBase {
   @Test
   public void grant_FAILURE_Missing_Client_Credentials() throws Exception {
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader = imbs().put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
-                                                       .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("POST", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -226,9 +242,12 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    ImmutableMap<String, String> expectedResponseHeader =
-        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
-                                           .build());
+
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
+      {
+        put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
+      }
+    });
 
     // Act
     server().grant(request)
@@ -251,13 +270,17 @@ public class OAuth2ServerTest_Generic extends TestBase {
     client = Optional.empty();
 
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
-              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
-              .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("POST", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes())});
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -265,9 +288,11 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    ImmutableMap<String, String> expectedResponseHeader =
-        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
-                                           .build());
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
+      {
+        put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
+      }
+    });
 
     // Act
     server().grant(request)
@@ -290,13 +315,17 @@ public class OAuth2ServerTest_Generic extends TestBase {
     isGrantTypeAllowed = false;
 
     // Arrange - Request
-    ImmutableMap<String, String> requestHeader =
-        imbs().put("Authorization", "Basic " + Base64.getEncoder()
-                                                     .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes()))
-              .put("Content-Type", MEDIA_X_WWW_FORM_URLENCODED)
-              .build();
-    String requestBody = "grant_type=password&username=" + encode(USER_USERNAME) + "&password=" + encode(USER_PASSWORD);
-    Request request = new Request("POST", requestHeader, requestBody);
+    Map<String, String[]> requestHeader = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    requestHeader.put("Authorization",
+        new String[] {"Basic " + Base64.getEncoder()
+                                       .encodeToString((CLIENT_ID + ":" + CLIENT_SECRET).getBytes())});
+    requestHeader.put("Content-Type", new String[] {MEDIA_X_WWW_FORM_URLENCODED});
+
+    Map<String, String[]> requestBody = new LinkedHashMap<>();
+    requestBody.put("grant_type", new String[] {"password"});
+    requestBody.put("username", new String[] {USER_ID});
+    requestBody.put("password", new String[] {USER_PASSWORD});
+    FormRequest request = new FormRequest("POST", requestHeader, requestBody);
 
     // Arrange - Expected Response
     Map<String, Object> map = new LinkedHashMap<>();
@@ -304,9 +333,11 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
-    ImmutableMap<String, String> expectedResponseHeader =
-        urlFormEncodedResponseHeader(imbs().put("WWW-Authenticate", "Basic realm=\"Service\"")
-                                           .build());
+    Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
+      {
+        put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
+      }
+    });
 
     // Act
     server().grant(request)

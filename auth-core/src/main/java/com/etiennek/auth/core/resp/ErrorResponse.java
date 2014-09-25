@@ -2,13 +2,12 @@ package com.etiennek.auth.core.resp;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.etiennek.auth.core.Const;
 import com.etiennek.auth.core.Response;
 import com.etiennek.auth.core.model.ErrorCode;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 
 public class ErrorResponse extends Response {
   private static String body = "error=%s&error_description=%s";
@@ -19,15 +18,15 @@ public class ErrorResponse extends Response {
     // TODO: Add WWW-Authenticate header for INVALID_CLIENT Error Code: 5.2 of the RFC
   }
 
-  private static ImmutableMap<String, String> header(ErrorCode errorCode) {
-    ImmutableMap.Builder<String, String> builder =
-        new Builder<String, String>().put("Content-Type", Const.MEDIA_X_WWW_FORM_URLENCODED)
-                                     .put("Cache-Control", "no-store")
-                                     .put("Pragma", "no-cache");
+  private static Map<String, String[]> header(ErrorCode errorCode) {
+    Map<String, String[]> ret = new HashMap<>();
+    ret.put("Content-Type", new String[] {Const.MEDIA_X_WWW_FORM_URLENCODED});
+    ret.put("Cache-Control", new String[] {"no-store"});
+    ret.put("Pragma", new String[] {"no-cache"});
     if (errorCode == ErrorCode.INVALID_CLIENT) {
-      builder.put("WWW-Authenticate", "Basic realm=\"Service\"");
+      ret.put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
     }
-    return builder.build();
+    return ret;
   }
 
   private static String encode(String toEncode) {
@@ -35,7 +34,7 @@ public class ErrorResponse extends Response {
       return URLEncoder.encode(toEncode, "UTF-8");
     } catch (UnsupportedEncodingException e) {
       // Should never happen
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

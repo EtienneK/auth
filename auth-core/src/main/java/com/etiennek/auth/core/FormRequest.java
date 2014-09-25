@@ -1,28 +1,29 @@
 package com.etiennek.auth.core;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import static com.etiennek.auth.core.Util.*;
 
-public class Request {
+import java.util.Map;
+
+public class FormRequest {
   private String method;
-  private ImmutableMap<String, String> header;
-  private String body;
+  private Map<String, String[]> header;
+  private Map<String, String[]> body;
 
-  public Request(String method, ImmutableMap<String, String> header, String body) {
-    this.method = Preconditions.checkNotNull(method);
-    this.header = Preconditions.checkNotNull(header);
-    this.body = Preconditions.checkNotNull(body);
+  public FormRequest(String method, Map<String, String[]> header, Map<String, String[]> body) {
+    this.method = checkNotNull(method);
+    this.body = checkNotNull(body);
+    this.header = toCaseInsensitiveMap(header);
   }
 
   public String getMethod() {
     return method;
   }
 
-  public ImmutableMap<String, String> getHeader() {
+  public Map<String, String[]> getHeader() {
     return header;
   }
 
-  public String getBody() {
+  public Map<String, String[]> getBody() {
     return body;
   }
 
@@ -44,7 +45,7 @@ public class Request {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    Request other = (Request) obj;
+    FormRequest other = (FormRequest) obj;
     if (body == null) {
       if (other.body != null)
         return false;
@@ -65,7 +66,6 @@ public class Request {
 
   @Override
   public String toString() {
-    return "HttpRequest [method=" + method + ", header=" + header + ", body=" + body + "]";
+    return "FormRequest [method=" + method + ", header=" + header + ", body=" + body + "]";
   }
-
 }

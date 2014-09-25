@@ -1,21 +1,22 @@
 package com.etiennek.auth.core.resp;
 
+import static com.etiennek.auth.core.Util.*;
+
 import java.time.Duration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import com.etiennek.auth.core.Const;
 import com.etiennek.auth.core.Response;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 
 public class AccessTokenResponse extends Response {
-  private static ImmutableMap<String, String> header = new ImmutableMap.Builder<String, String>().put("Content-Type",
-      Const.MEDIA_JSON)
-                                                                                                 .put("Cache-Control",
-                                                                                                     "no-store")
-                                                                                                 .put("Pragma",
-                                                                                                     "no-cache")
-                                                                                                 .build();
+  private static final Map<String, String[]> header = new LinkedHashMap<>();
+  static {
+    header.put("Content-Type", new String[] {Const.MEDIA_JSON});
+    header.put("Cache-Control", new String[] {"no-store"});
+    header.put("Pragma", new String[] {"no-cache"});
+  }
 
   public AccessTokenResponse(String accessToken, Optional<Duration> accessTokenLifetime, Optional<String> refreshToken) {
     super(200, header, generateBody(accessToken, accessTokenLifetime, refreshToken));
@@ -23,18 +24,18 @@ public class AccessTokenResponse extends Response {
 
   private static String generateBody(String accessToken, Optional<Duration> accessTokenLifetime,
       Optional<String> refreshToken) {
-    Preconditions.checkNotNull(accessToken);
+    checkNotNull(accessToken);
 
     StringBuilder body = new StringBuilder();
     body.append("{\"access_token\":\"")
         .append(accessToken)
         .append("\",\"token_type\":\"bearer\"");
-    if (accessTokenLifetime.isPresent()) {
+    if (accessTokenLifetime != null && accessTokenLifetime.isPresent()) {
       body.append(",\"expires_in\":")
           .append(accessTokenLifetime.get()
                                      .getSeconds());
     }
-    if (refreshToken.isPresent()) {
+    if (refreshToken != null && refreshToken.isPresent()) {
       body.append(",\"refresh_token\":\"")
           .append(refreshToken.get())
           .append("\"");

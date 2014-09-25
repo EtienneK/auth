@@ -2,7 +2,7 @@ package com.etiennek.auth.core.model;
 
 import java.time.LocalDateTime;
 
-import com.google.common.base.Preconditions;
+import static com.etiennek.auth.core.Util.*;
 
 public class RefreshToken {
   private String clientId;
@@ -14,8 +14,8 @@ public class RefreshToken {
   }
 
   public RefreshToken(String clientId, String userId, LocalDateTime expires) {
-    this.clientId = Preconditions.checkNotNull(clientId);
-    this.userId = Preconditions.checkNotNull(userId);
+    this.clientId = checkNotNull(clientId);
+    this.userId = checkNotNull(userId);
     this.expires = expires;
   }
 

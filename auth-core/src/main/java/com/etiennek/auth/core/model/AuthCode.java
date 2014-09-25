@@ -2,7 +2,7 @@ package com.etiennek.auth.core.model;
 
 import java.time.LocalDateTime;
 
-import com.google.common.base.Preconditions;
+import static com.etiennek.auth.core.Util.*;
 
 public class AuthCode {
   private String clientId;
@@ -10,9 +10,9 @@ public class AuthCode {
   private LocalDateTime expires;
 
   public AuthCode(String clientId, String userId, LocalDateTime expires) {
-    this.clientId = Preconditions.checkNotNull(clientId);
-    this.userId = Preconditions.checkNotNull(userId);
-    this.expires = Preconditions.checkNotNull(expires);
+    this.clientId = checkNotNull(clientId);
+    this.userId = checkNotNull(userId);
+    this.expires = checkNotNull(expires);
   }
 
   public boolean hasExpired(LocalDateTime now) {
