@@ -58,7 +58,8 @@ class Grant {
 
     // Only POST via application/x-www-form-urlencoded is acceptable
     if (!request.getMethod()
-                .equals(METHOD_POST) || contentType == null || !contentType.equals(MEDIA_X_WWW_FORM_URLENCODED)) {
+                .equalsIgnoreCase(METHOD_POST) || contentType == null
+        || !contentType.equals(MEDIA_X_WWW_FORM_URLENCODED)) {
       throw new OAuth2Exception(INVALID_REQUEST, "Method must be POST with application/x-www-form-urlencoded encoding.");
     }
 
