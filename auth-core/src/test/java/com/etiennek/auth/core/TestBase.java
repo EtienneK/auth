@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.junit.Assert;
 
+import com.etiennek.auth.core.model.AuthCode;
 import com.etiennek.auth.core.model.Client;
 import com.etiennek.auth.core.model.RefreshToken;
 import com.etiennek.auth.core.model.RequiredFunctions;
@@ -25,6 +26,7 @@ public abstract class TestBase {
   public static final LocalDateTime NOW = LocalDateTime.of(2014, 9, 24, 11, 05, 28, 382);
   public static final Duration ACCESS_TOKEN_LIFETIME = Duration.ofHours(2);
   public static final String ACCESS_TOKEN = "fewEWFefwhj23bnjklnhfew";
+  public static final String AUTH_CODE = "erjkhh#$%#334345jkhgerkn";
   public static final String REFRESH_TOKEN = "erjkhh#$%#334345jkhgerkn";
   public static final Duration REFRESH_TOKEN_LIFETIME = Duration.ofDays(21);
   public static final String USER_ID = "234535";
@@ -37,6 +39,7 @@ public abstract class TestBase {
 
   RequiredFunctions requiredFunctions;
   RequiredFunctions.PasswordGrantType passwordRequiredFunctions;
+  RequiredFunctions.AuthCodeGrantType authCodeRequiredFunctions;
   RequiredFunctions.RefreshTokenGrantType refreshTokenRequiredFunctions;
 
   private OAuth2ServerConfiguration config;
@@ -46,6 +49,7 @@ public abstract class TestBase {
   boolean isGrantTypeAllowed;
   Optional<Client> client;
   Optional<User> user;
+  Optional<AuthCode> authCode;
   Optional<RefreshToken> refreshToken;
 
   Response actualResponse;
@@ -57,6 +61,7 @@ public abstract class TestBase {
     isGrantTypeAllowed = true;
     client = Optional.of(new Client(CLIENT_ID, CLIENT_SECRET));
     user = Optional.of(new User(USER_ID, USER_USERNAME, USER_PASSWORD));
+    authCode = Optional.of(new AuthCode(CLIENT_ID, USER_ID, now.plusSeconds(1)));
     refreshToken = Optional.of(new RefreshToken(CLIENT_ID, USER_ID));
 
     requiredFunctions = new RequiredFunctions() {
@@ -126,6 +131,14 @@ public abstract class TestBase {
       }
     };
 
+    authCodeRequiredFunctions = new RequiredFunctions.AuthCodeGrantType() {
+      @Override
+      public CompletableFuture<GetAuthCodeRes> getAuthCode(String ac) {
+        Assert.assertEquals(AUTH_CODE, ac);
+        return CompletableFuture.completedFuture(new GetAuthCodeRes(authCode));
+      }
+    };
+
     passwordRequiredFunctions = new RequiredFunctions.PasswordGrantType() {
       @Override
       public CompletableFuture<GetUserRes> getUser(String username, String password) {
@@ -174,6 +187,7 @@ public abstract class TestBase {
         new OAuth2ServerConfiguration.Builder(requiredFunctions).withPasswordGrantTypeSupport(passwordRequiredFunctions)
                                                                 .withRefreshTokenGrantTypeSupport(
                                                                     refreshTokenRequiredFunctions)
+                                                                .withAuthCodeGrantTypeSupport(authCodeRequiredFunctions)
                                                                 .withAccessTokenLifetime(ACCESS_TOKEN_LIFETIME)
                                                                 .withRefreshTokenLifetime(REFRESH_TOKEN_LIFETIME);
   }

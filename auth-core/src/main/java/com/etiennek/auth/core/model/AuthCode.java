@@ -19,4 +19,12 @@ public class AuthCode {
     return expires.isBefore(now);
   }
 
+  public String getClientId() {
+    return clientId;
+  }
+
+  public String getUserId() {
+    return userId;
+  }
+
 }

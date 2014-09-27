@@ -110,6 +110,7 @@ public class OAuth2ServerTest_PasswordGrantType extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
+    @SuppressWarnings("serial")
     Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
       {
         put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
@@ -151,6 +152,7 @@ public class OAuth2ServerTest_PasswordGrantType extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
+    @SuppressWarnings("serial")
     Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
       {
         put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});

@@ -5,7 +5,6 @@ import static com.jayway.awaitility.Awaitility.*;
 import static java.util.concurrent.TimeUnit.*;
 
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -243,6 +242,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
 
     int expectedResponseCode = 401;
 
+    @SuppressWarnings("serial")
     Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
       {
         put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
@@ -288,6 +288,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
+    @SuppressWarnings("serial")
     Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
       {
         put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});
@@ -333,6 +334,7 @@ public class OAuth2ServerTest_Generic extends TestBase {
     map.put("token_type", "bearer");
 
     int expectedResponseCode = 401;
+    @SuppressWarnings("serial")
     Map<String, String[]> expectedResponseHeader = urlFormEncodedResponseHeader(new LinkedHashMap<String, String[]>() {
       {
         put("WWW-Authenticate", new String[] {"Basic realm=\"Service\""});

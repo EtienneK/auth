@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import com.etiennek.auth.core.model.AuthCode;
 import com.etiennek.auth.core.model.RefreshToken;
 import com.etiennek.auth.core.model.RequiredFunctions;
 import com.etiennek.auth.core.model.TokenType;
@@ -34,7 +35,7 @@ class Grant {
 
   private String userId;
 
-  public Grant(OAuth2ServerConfiguration config, FormRequest request) {
+  Grant(OAuth2ServerConfiguration config, FormRequest request) {
     this.config = config;
     this.request = request;
     this.requiredFuncs = config.getFuncs()
@@ -56,10 +57,8 @@ class Grant {
     body = request.getBody();
 
     // Grant type
-    grantType =
-        body.containsKey(KEY_GRANT_TYPE) && !isNullOrEmpty(body.get(KEY_GRANT_TYPE)) ? body.get(KEY_GRANT_TYPE)[0].trim()
-                                                                                                                  .toLowerCase()
-            : null;
+    grantType = !isNullOrEmpty(body.get(KEY_GRANT_TYPE)) ? body.get(KEY_GRANT_TYPE)[0].trim()
+                                                                                      .toLowerCase() : null;
     if (!config.isSupportedGrantType(grantType)) {
       throw new OAuth2Exception(INVALID_REQUEST, "Invalid or missing grant_type parameter.");
     }
@@ -116,6 +115,8 @@ class Grant {
         return usePasswordGrant();
       case GRANT_CLIENT_CREDENTIALS:
         return useClientCredentialsGrant();
+      case GRANT_AUTHORIZATION_CODE:
+        return useAuthCodeGrant();
       case GRANT_REFRESH_TOKEN:
         return useRefreshTokenGrant();
     }
@@ -187,10 +188,6 @@ class Grant {
   // Grants
 
   private CompletableFuture<Void> usePasswordGrant() {
-    if (!body.containsKey("username") || !body.containsKey("password")) {
-      throw new OAuth2Exception(INVALID_CLIENT, "Missing parameters. 'username' and 'password' are required.");
-    }
-
     String username = isNullOrEmpty(body.get("username")) ? null : body.get("username")[0];
     String password = isNullOrEmpty(body.get("password")) ? null : body.get("password")[0];
 
@@ -229,13 +226,36 @@ class Grant {
                  });
   }
 
-  private CompletableFuture<Void> useRefreshTokenGrant() {
-    if (!body.containsKey("refresh_token")) {
-      throw new OAuth2Exception(INVALID_REQUEST, "No 'refresh_token' parameter.");
+  private CompletableFuture<Void> useAuthCodeGrant() {
+    String code = isNullOrEmpty(body.get("code")) ? null : body.get("code")[0];
+    if (code == null) {
+      throw new OAuth2Exception(INVALID_REQUEST, "Ivalid or missing value for 'code'.");
     }
+
+    return config.getFuncs()
+                 .getAuthCode()
+                 .get()
+                 .getAuthCode(code)
+                 .thenAccept((result) -> {
+                   checkNotNull(result);
+                   if (!result.authCode.isPresent() || !clientId.equals(result.authCode.get()
+                                                                                       .getClientId())) {
+                     throw new OAuth2Exception(INVALID_GRANT, "Invalid authorization code.");
+                   }
+
+                   AuthCode authCode = result.authCode.get();
+                   if (authCode.hasExpired(requiredFuncs.getNow())) {
+                     throw new OAuth2Exception(INVALID_GRANT, "Authorization code  has expired.");
+                   }
+
+                   userId = checkNotNull(authCode.getUserId());
+                 });
+  }
+
+  private CompletableFuture<Void> useRefreshTokenGrant() {
     String token = isNullOrEmpty(body.get("refresh_token")) ? null : body.get("refresh_token")[0];
     if (token == null) {
-      throw new OAuth2Exception(INVALID_REQUEST, "Ivalid value for 'refresh_token'.");
+      throw new OAuth2Exception(INVALID_REQUEST, "Ivalid or missing value for 'refresh_token'.");
     }
 
     RefreshTokenGrantType funcs = config.getFuncs()
